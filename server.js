@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const xss = require('xss');
 const { body, validationResult } = require('express-validator');
 const path = require('path');
-const stripe = require('stripe')('process.env.STRIPE_SECRET_KEY 
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 const app = express();
 const PORT = process.env.PORT || 3000;
