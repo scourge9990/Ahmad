@@ -118,7 +118,7 @@ function sanitizeInput(input) {
   return xss(input, {
     whiteList: {},
     stripIgnoreTag: true,
-    stripIgnoreTagBody: });
+    stripIgnoreTagBody: ['script', 'style'] });
 }
 
 app.use((req, res, next) => {
