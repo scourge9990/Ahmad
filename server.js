@@ -17,9 +17,9 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'central-alberta-night-life
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ,
-      styleSrc: ,
-      scriptSrc: ,
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
     },
   },
@@ -199,7 +199,7 @@ app.post('/api/login',
 
     const { username, password } = req.body;
 
-    db.get(`SELECT id, username, password_hash FROM users WHERE username = ?`, , async (err, user) => {
+    db.get(`SELECT id, username, password_hash FROM users WHERE username = ?`, [username], async (err, user) => {
       if (err) {
         console.error('DB Error:', err);
         return res.status(500).json({ error: 'Database error' });
@@ -236,7 +236,7 @@ app.post('/api/logout', (req, res) => {
 
 app.get('/api/me', requireAuth, (req, res) => {
   db.get(
-    `SELECT id, username, email, age, location, is_premium, created_at FROM users WHERE id = ?`, ,
+    `SELECT id, username, email, age, location, is_premium, created_at FROM users WHERE id = ?`, [req.session.userId],
     (err, user) => {
       if (err) return res.status(500).json({ error: 'Database error' });
       if (!user) return res.status(404).json({ error: 'User not found' });
@@ -268,7 +268,7 @@ app.post('/api/like/:id', requireAuth, (req, res) => {
   }
 
   db.run(
-    `INSERT OR IGNORE INTO likes (liker_id, liked_id) VALUES (?, ?)`, ,
+    `INSERT OR IGNORE INTO likes (liker_id, liked_id) VALUES (?, ?)`, [likerId, likedId],
     function(err) {
       if (err) {
         console.error('DB Error:', err);
@@ -276,7 +276,7 @@ app.post('/api/like/:id', requireAuth, (req, res) => {
       }
 
       db.get(
-        `SELECT * FROM likes WHERE liker_id = ? AND liked_id = ?`, ,
+        `SELECT * FROM likes WHERE liker_id = ? AND liked_id = ?`, [likerId, likedId],
         (err, reciprocal) => {
           if (err) {
             console.error('DB Error:', err);
@@ -322,7 +322,7 @@ app.post('/create-checkout-session', async (req, res) => {
       },
     ],
     mode: 'subscription',
-    success_url: `${www.centralalbertaafterdark.com}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `https://www.centralalbertaafterdark.com/success.html?session_id={CHECKOUT_SESSION_ID}`,
   });
 
   res.redirect(303, session.url);
