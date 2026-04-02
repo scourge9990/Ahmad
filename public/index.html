@@ -942,9 +942,9 @@
         const csrfToken = await getCsrfToken();
         const res = await fetch('/api/login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'CSRF-Token': csrfToken },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username, password, _csrf: csrfToken }),
         });
         const data = await res.json();
 
@@ -997,10 +997,11 @@
         const csrfToken = await getCsrfToken();
         const body = { email, username, password };
         if (ageVal) body.age = parseInt(ageVal, 10);
+        body._csrf = csrfToken;
 
         const res = await fetch('/api/register', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'CSRF-Token': csrfToken },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
           body: JSON.stringify(body),
         });
@@ -1031,8 +1032,9 @@
         const csrfToken = await getCsrfToken();
         await fetch('/api/logout', {
           method: 'POST',
-          headers: { 'CSRF-Token': csrfToken },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
+          body: JSON.stringify({ _csrf: csrfToken }),
         });
       } catch (_) { /* best-effort */ }
       setLoggedOut();
