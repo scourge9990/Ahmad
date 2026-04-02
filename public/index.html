@@ -415,11 +415,196 @@
       .auth-block { position: static; margin-top: 1rem; }
       .payment-block { display: none !important; }
     }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-box {
+      background: #003594;
+      border: 3px solid #FFEB43;
+      border-radius: 14px;
+      padding: 2rem 2.2rem 1.8rem;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      font-family: Arial, sans-serif;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    }
+    .modal-box h2 {
+      margin: 0 0 1.4rem;
+      color: #FFEB43;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+    .modal-close {
+      position: absolute;
+      top: 0.8rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: #FFEB43;
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-bottom: 1rem;
+    }
+    .modal-field label {
+      font-size: 0.85rem;
+      color: #ccc;
+      font-weight: bold;
+    }
+    .modal-field input {
+      padding: 0.65rem 0.9rem;
+      border: 2px solid #FFEB43;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-size: 1rem;
+      font-family: Arial, sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .modal-field input:focus {
+      border-color: #fff;
+      background: rgba(255,255,255,0.13);
+    }
+    .modal-field input::placeholder { color: #aaa; }
+    .modal-submit {
+      width: 100%;
+      padding: 0.8rem;
+      background: #FFEB43;
+      color: #003594;
+      border: none;
+      border-radius: 25px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      margin-top: 0.4rem;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .modal-submit:hover { transform: scale(1.03); background: #ffe000; }
+    .modal-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .modal-msg {
+      margin-top: 0.9rem;
+      padding: 0.65rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      text-align: center;
+      display: none;
+    }
+    .modal-msg.error {
+      background: rgba(238,39,55,0.2);
+      border: 1px solid #EE2737;
+      color: #ff8a8a;
+      display: block;
+    }
+    .modal-msg.success {
+      background: rgba(13,104,38,0.25);
+      border: 1px solid #0D6826;
+      color: #7dffaa;
+      display: block;
+    }
+    .modal-switch {
+      margin-top: 1.1rem;
+      text-align: center;
+      font-size: 0.88rem;
+      color: #ccc;
+    }
+    .modal-switch a {
+      color: #FFEB43;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .modal-switch a:hover { color: #fff; }
+    .modal-hint {
+      font-size: 0.78rem;
+      color: #aaa;
+      margin-top: 0.15rem;
+    }
+    @media (max-width: 480px) {
+      .modal-box { padding: 1.5rem 1.2rem 1.4rem; margin: 0 1rem; }
+    }
   </style>
 </head>
 <body>
   <div id="toast"></div>
- 
+
+  <!-- ── Login Modal ── -->
+  <div id="login-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="login-modal-title">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('login-modal')" aria-label="Close">✕</button>
+      <h2 id="login-modal-title">🌙 Log In</h2>
+      <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+        <div class="modal-field">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" name="username" placeholder="Your username" autocomplete="username" required />
+        </div>
+        <div class="modal-field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" name="password" placeholder="Your password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="modal-submit" id="login-submit-btn">Log In</button>
+      </form>
+      <div id="login-msg" class="modal-msg"></div>
+      <div class="modal-switch">
+        Don't have an account? <a onclick="switchModal('login-modal','signup-modal')">Sign Up</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Sign Up Modal ── -->
+  <div id="signup-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="signup-modal-title">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('signup-modal')" aria-label="Close">✕</button>
+      <h2 id="signup-modal-title">✨ Sign Up</h2>
+      <form id="signup-form" onsubmit="handleSignup(event)" novalidate>
+        <div class="modal-field">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" name="email" placeholder="you@example.com" autocomplete="email" required />
+        </div>
+        <div class="modal-field">
+          <label for="signup-username">Username</label>
+          <input type="text" id="signup-username" name="username" placeholder="3–20 chars, letters/numbers/_" autocomplete="username" required />
+          <span class="modal-hint">3–20 characters, letters, numbers, and underscores only.</span>
+        </div>
+        <div class="modal-field">
+          <label for="signup-password">Password</label>
+          <input type="password" id="signup-password" name="password" placeholder="At least 8 characters" autocomplete="new-password" required />
+          <span class="modal-hint">Minimum 8 characters.</span>
+        </div>
+        <div class="modal-field">
+          <label for="signup-age">Age <span style="color:#aaa;font-weight:normal;">(optional, must be 18+)</span></label>
+          <input type="number" id="signup-age" name="age" placeholder="e.g. 28" min="18" max="120" autocomplete="off" />
+        </div>
+        <button type="submit" class="modal-submit" id="signup-submit-btn">Create Account</button>
+      </form>
+      <div id="signup-msg" class="modal-msg"></div>
+      <div class="modal-switch">
+        Already have an account? <a onclick="switchModal('signup-modal','login-modal')">Log In</a>
+      </div>
+    </div>
+  </div>
+
   <header>
     <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag left" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
    
@@ -433,8 +618,9 @@
     <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag right" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
    
     <div class="auth-block">
-      <button class="auth-btn" onclick="document.getElementById('payment-btn').style.display='block'; alert('Login modal would open')">Log In</button>
-      <button class="auth-btn" onclick="alert('Sign Up modal would open')">Sign Up</button>
+      <button class="auth-btn" id="header-login-btn" onclick="openModal('login-modal')">Log In</button>
+      <button class="auth-btn" id="header-signup-btn" onclick="openModal('signup-modal')">Sign Up</button>
+      <button class="auth-btn" id="header-logout-btn" onclick="handleLogout()" style="display:none;">Log Out</button>
     </div>
    
     <div class="payment-block" id="payment-btn" onclick="alert('Dashboard: ID Verification & Payment Options')">
@@ -644,6 +830,214 @@
     };
 
     renderProfiles();
+
+    // ── Modal helpers ──────────────────────────────────────────────────────
+
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('open');
+        // Focus the first input for accessibility
+        const first = el.querySelector('input');
+        if (first) setTimeout(() => first.focus(), 60);
+      }
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('open');
+        clearModalMsg(id);
+      }
+    }
+
+    function switchModal(fromId, toId) {
+      closeModal(fromId);
+      openModal(toId);
+    }
+
+    function clearModalMsg(modalId) {
+      const msgEl = document.getElementById(
+        modalId === 'login-modal' ? 'login-msg' : 'signup-msg'
+      );
+      if (msgEl) { msgEl.textContent = ''; msgEl.className = 'modal-msg'; }
+    }
+
+    function showModalMsg(msgId, text, type) {
+      const el = document.getElementById(msgId);
+      if (!el) return;
+      el.textContent = text;
+      el.className = 'modal-msg ' + type; // 'error' or 'success'
+    }
+
+    // Close modal when clicking the dark overlay (outside the box)
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    // Close modals on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
+      }
+    });
+
+    // ── CSRF token fetch ───────────────────────────────────────────────────
+
+    async function getCsrfToken() {
+      const res = await fetch('/api/csrf-token', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('Could not fetch security token. Please refresh the page.');
+      const data = await res.json();
+      return data.csrfToken;
+    }
+
+    // ── Update header buttons based on session state ───────────────────────
+
+    function setLoggedIn(username) {
+      document.getElementById('header-login-btn').style.display = 'none';
+      document.getElementById('header-signup-btn').style.display = 'none';
+      document.getElementById('header-logout-btn').style.display = '';
+      document.getElementById('payment-btn').style.display = 'block';
+      showToast(`👋 Welcome back, ${username}!`);
+    }
+
+    function setLoggedOut() {
+      document.getElementById('header-login-btn').style.display = '';
+      document.getElementById('header-signup-btn').style.display = '';
+      document.getElementById('header-logout-btn').style.display = 'none';
+      document.getElementById('payment-btn').style.display = 'none';
+    }
+
+    // Check if already logged in on page load
+    (async () => {
+      try {
+        const res = await fetch('/api/me', { credentials: 'same-origin' });
+        if (res.ok) {
+          const user = await res.json();
+          setLoggedIn(user.username);
+        }
+      } catch (_) { /* not logged in — that's fine */ }
+    })();
+
+    // ── Login form handler ─────────────────────────────────────────────────
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-submit-btn');
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!username || !password) {
+        showModalMsg('login-msg', 'Please enter your username and password.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Logging in…';
+      showModalMsg('login-msg', '', '');
+
+      try {
+        const csrfToken = await getCsrfToken();
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'CSRF-Token': csrfToken },
+          credentials: 'same-origin',
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showModalMsg('login-msg', '✅ Logged in successfully!', 'success');
+          setTimeout(() => {
+            closeModal('login-modal');
+            document.getElementById('login-form').reset();
+            setLoggedIn(data.username);
+          }, 800);
+        } else {
+          showModalMsg('login-msg', data.error || 'Login failed. Please try again.', 'error');
+        }
+      } catch (err) {
+        showModalMsg('login-msg', err.message || 'Network error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+      }
+    }
+
+    // ── Sign-up form handler ───────────────────────────────────────────────
+
+    async function handleSignup(e) {
+      e.preventDefault();
+      const btn = document.getElementById('signup-submit-btn');
+      const email = document.getElementById('signup-email').value.trim();
+      const username = document.getElementById('signup-username').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const ageVal = document.getElementById('signup-age').value.trim();
+
+      if (!email || !username || !password) {
+        showModalMsg('signup-msg', 'Email, username, and password are required.', 'error');
+        return;
+      }
+      if (password.length < 8) {
+        showModalMsg('signup-msg', 'Password must be at least 8 characters.', 'error');
+        return;
+      }
+      if (ageVal && (parseInt(ageVal, 10) < 18 || parseInt(ageVal, 10) > 120)) {
+        showModalMsg('signup-msg', 'You must be 18 or older to join.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+      showModalMsg('signup-msg', '', '');
+
+      try {
+        const csrfToken = await getCsrfToken();
+        const body = { email, username, password };
+        if (ageVal) body.age = parseInt(ageVal, 10);
+
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'CSRF-Token': csrfToken },
+          credentials: 'same-origin',
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showModalMsg(
+            'signup-msg',
+            data.message || '✅ Account created! Check your email to verify your address.',
+            'success'
+          );
+          document.getElementById('signup-form').reset();
+        } else {
+          showModalMsg('signup-msg', data.error || 'Registration failed. Please try again.', 'error');
+        }
+      } catch (err) {
+        showModalMsg('signup-msg', err.message || 'Network error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    }
+
+    // ── Logout handler ─────────────────────────────────────────────────────
+
+    async function handleLogout() {
+      try {
+        const csrfToken = await getCsrfToken();
+        await fetch('/api/logout', {
+          method: 'POST',
+          headers: { 'CSRF-Token': csrfToken },
+          credentials: 'same-origin',
+        });
+      } catch (_) { /* best-effort */ }
+      setLoggedOut();
+      showToast('👋 Logged out. See you tonight!');
+    }
   </script>
 </body>
 </html>
