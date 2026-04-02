@@ -114,8 +114,11 @@ app.use(session({
 // ---------------------------------------------------------------------------
 const csrfProtection = csrf({ cookie: false }); // uses session store
 
-// Expose CSRF token to the frontend via a dedicated endpoint
-app.get('/api/csrf-token', csrfProtection, (req, res) => {
+// Expose CSRF token to the frontend via a dedicated endpoint.
+// csrfProtection is intentionally NOT applied here — this endpoint exists
+// to bootstrap the token for the frontend (e.g. login/signup forms) and
+// therefore cannot require a pre-existing valid token to succeed.
+app.get('/api/csrf-token', (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 
