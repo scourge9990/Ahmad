@@ -114,7 +114,7 @@ app.use(session({
 // ---------------------------------------------------------------------------
 // CSRF protection — applied to all state-changing routes
 // ---------------------------------------------------------------------------
-const csrfProtection = csrf({ cookie: true }); // uses cookie store
+const csrfProtection = csrf(); // uses session store; token validated from request body
 
 // Expose CSRF token to the frontend via a dedicated endpoint.
 // We run csrfProtection but swallow EBADCSRFTOKEN validation errors — the
