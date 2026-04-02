@@ -90,6 +90,8 @@ app.use('/api/', apiLimiter);
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 app.use(express.static('public'));
 
 // ---------------------------------------------------------------------------
@@ -112,7 +114,7 @@ app.use(session({
 // ---------------------------------------------------------------------------
 // CSRF protection — applied to all state-changing routes
 // ---------------------------------------------------------------------------
-const csrfProtection = csrf({ cookie: false }); // uses session store
+const csrfProtection = csrf({ cookie: true }); // uses cookie store
 
 // Expose CSRF token to the frontend via a dedicated endpoint.
 // We run csrfProtection but swallow EBADCSRFTOKEN validation errors — the
