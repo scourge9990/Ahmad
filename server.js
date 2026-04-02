@@ -115,10 +115,21 @@ app.use(session({
 const csrfProtection = csrf({ cookie: false }); // uses session store
 
 // Expose CSRF token to the frontend via a dedicated endpoint.
-// csrfProtection is intentionally NOT applied here — this endpoint exists
-// to bootstrap the token for the frontend (e.g. login/signup forms) and
-// therefore cannot require a pre-existing valid token to succeed.
-app.get('/api/csrf-token', (req, res) => {
+// We run csrfProtection but swallow EBADCSRFTOKEN validation errors — the
+// middleware still attaches req.csrfToken() to the request before it checks
+// the incoming token, so the handler can generate a fresh token even when
+// no prior token exists (e.g. first page load, login/signup forms).
+const csrfGenerateOnly = (req, res, next) => {
+  csrfProtection(req, res, (err) => {
+    if (err && err.code === 'EBADCSRFTOKEN') {
+      // Validation failed but req.csrfToken is now available — continue.
+      return next();
+    }
+    next(err);
+  });
+};
+
+app.get('/api/csrf-token', csrfGenerateOnly, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 
