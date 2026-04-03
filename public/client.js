@@ -37,7 +37,7 @@ async function secureFetch(url, options = {}) {
     const token = await getCsrfToken();
     options.headers = {
       ...(options.headers || {}),
-      'CSRF-Token': token,
+      'X-CSRF-Token': token,
     };
   }
 
