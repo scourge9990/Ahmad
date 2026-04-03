@@ -38,7 +38,7 @@ async function secureFetch(url, options = {}) {
     options.headers = {
       ...(options.headers || {}),
       console.log('Sending CSRF token:',token);
-      'X-CSRF-Token': token,
+      'CSRF-Token': token,
     };
   }
 
