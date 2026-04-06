@@ -20,7 +20,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'central-alberta-night-life-secret-key';
 
 // ---------------------------------------------------------------------------
-// Email transporter (configure via environment variables)
+// Email transporter
 // ---------------------------------------------------------------------------
 const emailTransporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -67,9 +67,8 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts. Try again in 15 minutes.' },
 });
 
-// Stricter limiter for registration to prevent bot account spam
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000,
   max: 3,
   message: { error: 'Too many registration attempts. Try again in an hour.' },
 });
@@ -85,7 +84,7 @@ app.use('/api/register', registerLimiter);
 app.use('/api/', apiLimiter);
 
 // ---------------------------------------------------------------------------
-// Body parsing — Stripe webhook needs raw body BEFORE json middleware
+// Body parsing
 // ---------------------------------------------------------------------------
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10kb' }));
@@ -95,7 +94,7 @@ app.use(cookieParser());
 app.use(express.static('public'));
 
 // ---------------------------------------------------------------------------
-// Session — persistent SQLite store, secure cookies in production
+// Session — FIXED for production
 // ---------------------------------------------------------------------------
 app.use(session({
   store: new SQLiteStore({ db: 'sessions.sqlite', dir: './' }),
@@ -104,15 +103,16 @@ app.use(session({
   saveUninitialized: false,
   name: 'sessionId',
   cookie: {
-    secure: IS_PRODUCTION,
+    secure: true,                                         // ✅ Always true on Railway (HTTPS)
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax',  // ✅ FIXED for Railway
+    sameSite: 'none',                                     // ✅ Required for proxy/CDN
+    domain: '.centralalbertaafterdark.com',               // ✅ Covers www. and root
   },
 }));
 
 // ---------------------------------------------------------------------------
-// CSRF protection — applied to all state-changing routes
+// CSRF protection
 // ---------------------------------------------------------------------------
 const csrfProtection = csrf();
 
@@ -130,7 +130,7 @@ app.get('/api/csrf-token', csrfGenerateOnly, (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Database
+// Database (unchanged — kept intact)
 // ---------------------------------------------------------------------------
 const db = new sqlite3.Database('./database.sqlite', (err) => {
   if (err) {
@@ -367,7 +367,7 @@ app.post('/api/resend-verification', csrfProtection, async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Login — FIXED validation syntax
+// Login — FIXED validation
 // ---------------------------------------------------------------------------
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
