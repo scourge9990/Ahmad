@@ -17,7 +17,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'central-alberta-night-life-secret-key';
+const SESSION_SECRET = process.env.SESSION_SECRET || 
+'central-alberta-night-life-secret-key';
 
 // ---------------------------------------------------------------------------
 // Email transporter (configure via environment variables)
@@ -104,17 +105,18 @@ app.use(session({
   saveUninitialized: false,
   name: 'sessionId',
   cookie: {
-    secure: IS_PRODUCTION,   // HTTPS-only in production
+    secure: IS_PRODUCTION,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'strict',
+    sameSite: 'lax',  // ← ✅ FIXED: changed from 'strict' to 'lax'
   },
 }));
 
 // ---------------------------------------------------------------------------
 // CSRF protection — applied to all state-changing routes
 // ---------------------------------------------------------------------------
-const csrfProtection = csrf(); // uses session store; token validated from request body
+const csrfProtection = csrf(); // uses session store; token validated from request 
+body
 
 // Expose CSRF token to the frontend via a dedicated endpoint.
 // We run csrfProtection but swallow EBADCSRFTOKEN validation errors — the
@@ -276,13 +278,16 @@ app.post('/api/register',
       .isLength({ min: 3, max: 20 })
       .matches(/^[a-zA-Z0-9_]+$/)
       .withMessage('Username: 3-20 chars, letters/numbers/underscore only'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-    body('age').optional().isInt({ min: 18, max: 120 }).withMessage('Age must be 18-120'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 
+characters'),
+    body('age').optional().isInt({ min: 18, max: 120 }).withMessage('Age must be 
+18-120'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') });
+      return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') 
+});
     }
 
     const { email, username, password, age, location } = req.body;
@@ -295,13 +300,16 @@ app.post('/api/register',
       const verificationToken = crypto.randomBytes(32).toString('hex');
 
       db.run(
-        `INSERT INTO users (email, username, password_hash, age, location, verification_token)
+        `INSERT INTO users (email, username, password_hash, age, location, 
+verification_token)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [email.toLowerCase(), username, hashedPassword, age || null, safeLocation, verificationToken],
+        [email.toLowerCase(), username, hashedPassword, age || null, safeLocation, 
+verificationToken],
         async function(err) {
           if (err) {
             if (err.message?.includes('UNIQUE constraint failed')) {
-              return res.status(400).json({ error: 'Email or username already taken.' });
+              return res.status(400).json({ error: 'Email or username already taken.' 
+});
             }
             console.error('DB Error:', err);
             return res.status(500).json({ error: 'Database error' });
@@ -315,12 +323,14 @@ app.post('/api/register',
             `<p>Welcome to Central Alberta After Dark!</p>
              <p>Please verify your email address by clicking the link below:</p>
              <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-             <p>This link does not expire — but you must verify before you can log in.</p>`
+             <p>This link does not expire — but you must verify before you can log 
+in.</p>`
           );
 
           res.status(201).json({
             success: true,
-            message: 'Account created! Please check your email to verify your address before logging in.',
+            message: 'Account created! Please check your email to verify your address 
+before logging in.',
           });
         }
       );
@@ -350,7 +360,8 @@ app.get('/api/verify-email', (req, res) => {
         return res.status(500).json({ error: 'Database error' });
       }
       if (this.changes === 0) {
-        return res.status(400).json({ error: 'Invalid or already-used verification token.' });
+        return res.status(400).json({ error: 'Invalid or already-used verification 
+token.' });
       }
       // Redirect to the homepage with a success flag the frontend can read
       res.redirect('/?verified=1');
@@ -370,11 +381,13 @@ app.post('/api/resend-verification', csrfProtection, async (req, res) => {
       if (err) return res.status(500).json({ error: 'Database error' });
       // Always return success to avoid user enumeration
       if (!user || user.is_verified) {
-        return res.json({ success: true, message: 'If that address is registered and unverified, a new email has been sent.' });
+        return res.json({ success: true, message: 'If that address is registered and 
+unverified, a new email has been sent.' });
       }
 
       const newToken = crypto.randomBytes(32).toString('hex');
-      db.run(`UPDATE users SET verification_token = ? WHERE id = ?`, [newToken, user.id]);
+      db.run(`UPDATE users SET verification_token = ? WHERE id = ?`, [newToken, 
+user.id]);
 
       const verifyUrl = `${APP_URL}/api/verify-email?token=${newToken}`;
       await sendEmail(
@@ -384,7 +397,8 @@ app.post('/api/resend-verification', csrfProtection, async (req, res) => {
          <p><a href="${verifyUrl}">${verifyUrl}</a></p>`
       );
 
-      res.json({ success: true, message: 'If that address is registered and unverified, a new email has been sent.' });
+      res.json({ success: true, message: 'If that address is registered and 
+unverified, a new email has been sent.' });
     }
   );
 });
@@ -402,13 +416,15 @@ app.post('/api/login',
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') });
+      return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') 
+});
     }
 
     const { username, password } = req.body;
 
     db.get(
-      `SELECT id, username, password_hash, is_verified, failed_login_attempts, locked_until
+      `SELECT id, username, password_hash, is_verified, failed_login_attempts, 
+locked_until
        FROM users WHERE username = ?`,
       [username],
       async (err, user) => {
@@ -428,14 +444,16 @@ app.post('/api/login',
         if (user.locked_until && now < user.locked_until) {
           const minutesLeft = Math.ceil((user.locked_until - now) / 60000);
           return res.status(423).json({
-            error: `Account locked due to too many failed attempts. Try again in ${minutesLeft} minute(s).`,
+            error: `Account locked due to too many failed attempts. Try again in 
+${minutesLeft} minute(s).`,
           });
         }
 
         // Email verification check
         if (!user.is_verified) {
           return res.status(403).json({
-            error: 'Please verify your email address before logging in. Check your inbox or request a new verification email.',
+            error: 'Please verify your email address before logging in. Check your 
+inbox or request a new verification email.',
           });
         }
 
@@ -446,18 +464,21 @@ app.post('/api/login',
             const newAttempts = (user.failed_login_attempts || 0) + 1;
             const shouldLock = newAttempts >= MAX_FAILED_ATTEMPTS;
             db.run(
-              `UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?`,
+              `UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id 
+= ?`,
               [newAttempts, shouldLock ? now + LOCKOUT_DURATION_MS : null, user.id]
             );
             if (shouldLock) {
-              return res.status(423).json({ error: 'Too many failed attempts. Account locked for 15 minutes.' });
+              return res.status(423).json({ error: 'Too many failed attempts. Account 
+locked for 15 minutes.' });
             }
             return res.status(401).json({ error: 'Invalid credentials' });
           }
 
           // Successful login — reset lockout counters
           db.run(
-            `UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?`,
+            `UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id 
+= ?`,
             [user.id]
           );
 
@@ -501,9 +522,11 @@ app.post('/api/forgot-password', csrfProtection, async (req, res) => {
   if (!email) return res.status(400).json({ error: 'Email required.' });
 
   // Always return success to prevent user enumeration
-  const genericResponse = { success: true, message: 'If that email is registered, a reset link has been sent.' };
+  const genericResponse = { success: true, message: 'If that email is registered, a 
+reset link has been sent.' };
 
-  db.get(`SELECT id, email FROM users WHERE email = ?`, [email.toLowerCase()], async (err, user) => {
+  db.get(`SELECT id, email FROM users WHERE email = ?`, [email.toLowerCase()], async 
+(err, user) => {
     if (err) { console.error('DB Error:', err); }
     if (!user) return res.json(genericResponse);
 
@@ -514,14 +537,16 @@ app.post('/api/forgot-password', csrfProtection, async (req, res) => {
       `UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?`,
       [resetToken, expires, user.id],
       async (err) => {
-        if (err) { console.error('DB Error:', err); return res.json(genericResponse); }
+        if (err) { console.error('DB Error:', err); return res.json(genericResponse); 
+}
 
         const resetUrl = `${APP_URL}/reset-password.html?token=${resetToken}`;
         await sendEmail(
           user.email,
           'Reset your Central Alberta After Dark password',
           `<p>You requested a password reset.</p>
-           <p>Click the link below to set a new password. This link expires in 1 hour.</p>
+           <p>Click the link below to set a new password. This link expires in 1 
+hour.</p>
            <p><a href="${resetUrl}">${resetUrl}</a></p>
            <p>If you did not request this, you can safely ignore this email.</p>`
         );
@@ -541,28 +566,35 @@ app.post('/api/reset-password', csrfProtection, async (req, res) => {
     return res.status(400).json({ error: 'Token and new password are required.' });
   }
   if (password.length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' 
+});
   }
 
   db.get(
     `SELECT id, reset_token_expires FROM users WHERE reset_token = ?`,
     [token],
     async (err, user) => {
-      if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 'Database error' }); }
-      if (!user) return res.status(400).json({ error: 'Invalid or expired reset token.' });
+      if (err) { console.error('DB Error:', err); return res.status(500).json({ 
+error: 'Database error' }); }
+      if (!user) return res.status(400).json({ error: 'Invalid or expired reset 
+token.' });
       if (Date.now() > user.reset_token_expires) {
-        return res.status(400).json({ error: 'Reset token has expired. Please request a new one.' });
+        return res.status(400).json({ error: 'Reset token has expired. Please request 
+a new one.' });
       }
 
       try {
         const hashedPassword = await bcrypt.hash(password, 12);
         db.run(
-          `UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL,
+          `UPDATE users SET password_hash = ?, reset_token = NULL, 
+reset_token_expires = NULL,
            failed_login_attempts = 0, locked_until = NULL WHERE id = ?`,
           [hashedPassword, user.id],
           (err) => {
-            if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 'Database error' }); }
-            res.json({ success: true, message: 'Password updated. You can now log in.' });
+            if (err) { console.error('DB Error:', err); return res.status(500).json({ 
+error: 'Database error' }); }
+            res.json({ success: true, message: 'Password updated. You can now log 
+in.' });
           }
         );
       } catch (error) {
@@ -578,7 +610,8 @@ app.post('/api/reset-password', csrfProtection, async (req, res) => {
 // ---------------------------------------------------------------------------
 app.get('/api/me', requireAuth, (req, res) => {
   db.get(
-    `SELECT id, username, email, age, location, bio, is_premium, created_at FROM users WHERE id = ?`,
+    `SELECT id, username, email, age, location, bio, is_premium, created_at FROM 
+users WHERE id = ?`,
     [req.session.userId],
     (err, user) => {
       if (err) return res.status(500).json({ error: 'Database error' });
@@ -599,7 +632,8 @@ app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
      shift_schedule = COALESCE(?, shift_schedule) WHERE id = ?`,
     [safeBio, safeLocation, safeShift, req.session.userId],
     function(err) {
-      if (err) { console.error('DB Error:', err); return res.status(500).json({ error: 'Database error' }); }
+      if (err) { console.error('DB Error:', err); return res.status(500).json({ 
+error: 'Database error' }); }
       res.json({ success: true });
     }
   );
@@ -629,7 +663,8 @@ app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
   }
 
   db.run(
-    `INSERT OR IGNORE INTO likes (liker_id, liked_id) VALUES (?, ?)`, [likerId, likedId],
+    `INSERT OR IGNORE INTO likes (liker_id, liked_id) VALUES (?, ?)`, [likerId, 
+likedId],
     function(err) {
       if (err) {
         console.error('DB Error:', err);
@@ -637,7 +672,8 @@ app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
       }
 
       db.get(
-        `SELECT * FROM likes WHERE liker_id = ? AND liked_id = ?`, [likedId, likerId],
+        `SELECT * FROM likes WHERE liker_id = ? AND liked_id = ?`, [likedId, 
+likerId],
         (err, reciprocal) => {
           if (err) {
             console.error('DB Error:', err);
@@ -652,7 +688,8 @@ app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
               [user1, user2],
               (err) => { if (err) console.error('Match creation error:', err); }
             );
-            return res.json({ success: true, match: true, message: "It's a match!" });
+            return res.json({ success: true, match: true, message: "It's a match!" 
+});
           }
 
           res.json({ success: true, match: false, message: 'Liked!' });
@@ -665,7 +702,8 @@ app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
 // ---------------------------------------------------------------------------
 // Stripe checkout
 // ---------------------------------------------------------------------------
-app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, res) => {
+app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, res) => 
+{
   try {
     const prices = await stripe.prices.list({
       lookup_keys: [req.body.lookup_key],
@@ -710,12 +748,15 @@ app.post('/webhook/stripe', (req, res) => {
   }
 
   // Idempotency: skip already-processed events
-  db.get(`SELECT id FROM webhook_events WHERE stripe_event_id = ?`, [event.id], (err, existing) => {
-    if (err) { console.error('DB Error:', err); return res.status(500).send('Database error'); }
+  db.get(`SELECT id FROM webhook_events WHERE stripe_event_id = ?`, [event.id], (err, 
+existing) => {
+    if (err) { console.error('DB Error:', err); return res.status(500).send('Database 
+error'); }
     if (existing) return res.json({ received: true }); // already handled
 
     db.run(
-      `INSERT INTO webhook_events (stripe_event_id, event_type, payload) VALUES (?, ?, ?)`,
+      `INSERT INTO webhook_events (stripe_event_id, event_type, payload) VALUES (?, 
+?, ?)`,
       [event.id, event.type, JSON.stringify(event.data.object)],
       (err) => { if (err) console.error('Webhook log error:', err); }
     );
@@ -748,12 +789,14 @@ app.get('/', (req, res) => {
 // ---------------------------------------------------------------------------
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
-    return res.status(403).json({ error: 'Invalid or missing CSRF token. Please refresh the page and try again.' });
+    return res.status(403).json({ error: 'Invalid or missing CSRF token. Please 
+refresh the page and try again.' });
   }
   console.error('Unhandled Error:', err.stack);
   res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, () => {
-  console.log(`Central Alberta Night Life server running on http://localhost:${PORT}`);
+  console.log(`Central Alberta Night Life server running on 
+http://localhost:${PORT}`);
 });
