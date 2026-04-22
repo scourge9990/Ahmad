@@ -4,7 +4,7 @@
   "description": "Dating app for night shift workers",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "sh start.sh"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
