@@ -97,7 +97,7 @@ app.use(session({
   },
 }));
 
-const csrfProtection = csrf();
+const csrfProtection = csrf({ cookie: true });
 
 const csrfGenerateOnly = (req, res, next) => {
   csrfProtection(req, res, (err) => {
