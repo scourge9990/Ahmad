@@ -346,9 +346,10 @@ app.post('/api/login', csrfProtection, [
       if (user.locked_until && now < user.locked_until) {
         return res.status(423).json({ error: `Account locked. Try again in ${(user.locked_until - now)/60000|0} minutes.` });
       }
-      if (!user.is_verified) {
-        return res.status(403).json({ error: 'Please verify your email address before logging in.' });
-      }
+      // TODO: Re-enable once SMTP is configured — temporarily bypassed for testing
+      // if (!user.is_verified) {
+      //   return res.status(403).json({ error: 'Please verify your email address before logging in.' });
+      // }
       
       try {
         const match = await bcrypt.compare(password, user.password_hash);
