@@ -689,4 +689,212 @@ centralalbertaafterdarkads@gmail.com')">
     <aside class="right-sidebar">
       <div class="filter-card active" onclick="setFilter('all')">All Night Owls</div>
       <div class="filter-card" onclick="setFilter('online')">Up Late. 🌙</div>
-      <div class="filterError: Internal Server Error (ref: 2ca659bf-dfcd-426d-bead-ca04fb85a80b)
+      <div class="filter-card locked" onclick="alert('Night Shift filter — Premium feature')">Night Shift 🌙</div>
+      <div class="filter-card locked" onclick="alert('Nearby filter — Premium feature')">Nearby 📍</div>
+    </aside>
+  </div>
+
+  <div id="chat-bar">
+    <input id="chat-input" type="text" placeholder="Say something to the night owls… 🌙" maxlength="300" />
+    <button id="chat-send" onclick="sendChat()">Send</button>
+  </div>
+
+  <script src="/client.js"></script>
+  <script>
+    // ── State ──────────────────────────────────────────────────────────────
+    let currentFilter = 'all';
+    let currentUser = null;
+
+    // ── Modal helpers ──────────────────────────────────────────────────────
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      const msg = document.getElementById(id.replace('-modal', '-msg'));
+      if (msg) { msg.className = 'modal-msg'; msg.textContent = ''; }
+    }
+    function switchModal(from, to) {
+      closeModal(from);
+      openModal(to);
+    }
+
+    // ── Toast ──────────────────────────────────────────────────────────────
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 4000);
+    }
+
+    // ── Auth state ─────────────────────────────────────────────────────────
+    function setAuthUI(username) {
+      currentUser = username;
+      document.getElementById('header-login-btn').style.display = username ? 'none' : '';
+      document.getElementById('header-signup-btn').style.display = username ? 'none' : '';
+      document.getElementById('header-logout-btn').style.display = username ? '' : 'none';
+    }
+
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const data = await res.json();
+          setAuthUI(data.username);
+        }
+      } catch (_) {}
+    }
+
+    // ── Login ──────────────────────────────────────────────────────────────
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-submit-btn');
+      const msg = document.getElementById('login-msg');
+      btn.disabled = true;
+      msg.className = 'modal-msg';
+      msg.textContent = '';
+
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const csrfRes = await fetch('/api/csrf-token');
+        const { csrfToken } = await csrfRes.json();
+
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, csrfToken }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          closeModal('login-modal');
+          setAuthUI(data.username);
+          showToast('🌙 Welcome back, ' + data.username + '!');
+          loadProfiles();
+        } else {
+          msg.className = 'modal-msg error';
+          msg.textContent = data.error || 'Login failed.';
+        }
+      } catch (err) {
+        msg.className = 'modal-msg error';
+        msg.textContent = 'Network error. Please try again.';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ── Sign Up ────────────────────────────────────────────────────────────
+    async function handleSignup(e) {
+      e.preventDefault();
+      const btn = document.getElementById('signup-submit-btn');
+      const msg = document.getElementById('signup-msg');
+      btn.disabled = true;
+      msg.className = 'modal-msg';
+      msg.textContent = '';
+
+      const email    = document.getElementById('signup-email').value.trim();
+      const username = document.getElementById('signup-username').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const age      = document.getElementById('signup-age').value;
+
+      try {
+        const csrfRes = await fetch('/api/csrf-token');
+        const { csrfToken } = await csrfRes.json();
+
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, username, password, age: age ? parseInt(age, 10) : undefined, csrfToken }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          msg.className = 'modal-msg success';
+          msg.textContent = data.message || 'Account created! Check your email to verify.';
+          document.getElementById('signup-form').reset();
+        } else {
+          msg.className = 'modal-msg error';
+          msg.textContent = data.error || 'Sign up failed.';
+        }
+      } catch (err) {
+        msg.className = 'modal-msg error';
+        msg.textContent = 'Network error. Please try again.';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ── Logout ─────────────────────────────────────────────────────────────
+    async function handleLogout() {
+      try {
+        await fetch('/api/logout', { method: 'POST' });
+      } catch (_) {}
+      setAuthUI(null);
+      showToast('👋 Logged out. Night owl signing off!');
+      loadProfiles();
+    }
+
+    // ── Profiles ───────────────────────────────────────────────────────────
+    function setFilter(f) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-card').forEach(el => el.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      loadProfiles();
+    }
+
+    async function loadProfiles() {
+      const container = document.getElementById('profiles-container');
+      try {
+        const res = await fetch('/api/profiles');
+        const profiles = await res.json();
+        if (!profiles.length) {
+          container.innerHTML = '<div class="empty-feed">🌙 No night owls found yet. Be the first!</div>';
+          return;
+        }
+        container.innerHTML = profiles.map(p => `
+          <div class="profile-row">
+            <img class="thumbnail" src="https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(p.username)}" alt="${p.username}" />
+            <div class="info">
+              <div class="name-age">${p.username}${p.age ? ', ' + p.age : ''}</div>
+              ${p.location ? '<div class="location">📍 ' + p.location + '</div>' : ''}
+              ${p.bio ? '<div class="bio-teaser">' + p.bio.slice(0, 120) + (p.bio.length > 120 ? '…' : '') + '</div>' : ''}
+            </div>
+            <div class="buttons">
+              <button class="like-btn" onclick="likeProfile(${p.id})" ${currentUser ? '' : 'disabled'}>❤️ Like</button>
+              <button class="pass-btn">✕ Pass</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = '<div class="empty-feed">⚠️ Could not load profiles.</div>';
+      }
+    }
+
+    async function likeProfile(id) {
+      if (!currentUser) { openModal('login-modal'); return; }
+      try {
+        const csrfRes = await fetch('/api/csrf-token');
+        const { csrfToken } = await csrfRes.json();
+        const res = await fetch('/api/like/' + id, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ csrfToken }),
+        });
+        const data = await res.json();
+        if (data.match) showToast('💛 It\'s a match!');
+        else showToast('❤️ Liked!');
+      } catch (_) {
+        showToast('⚠️ Could not send like.');
+      }
+    }
+
+    function sendChat() {
+      showToast('💬 Chat coming soon for Night Owl Premium members!');
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    checkSession();
+    loadProfiles();
+  </script>
+</body>
+</html>
