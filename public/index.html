@@ -691,6 +691,10 @@ centralalbertaafterdarkads@gmail.com')">
       <div class="filter-card" onclick="setFilter('online')">Up Late. 🌙</div>
       <div class="filter-card locked" onclick="alert('Night Shift filter — Premium feature')">Night Shift 🌙</div>
       <div class="filter-card locked" onclick="alert('Nearby filter — Premium feature')">Nearby 📍</div>
+      <div class="filter-card locked" onclick="alert('Road Trip filter — Premium feature')">Road Trip 🛣️</div>
+      <div class="filter-card locked" onclick="alert('Fishing Buddy filter — Premium feature')">Fishing Buddy 🎣⛵</div>
+      <div class="filter-card locked" onclick="alert('Hit the Pub filter — Premium feature')">Hit the Pub 🍺</div>
+      <div class="filter-card locked" onclick="alert('Fur Parents filter — Premium feature')">Fur Parents 🐾</div>
     </aside>
   </div>
 
@@ -704,6 +708,70 @@ centralalbertaafterdarkads@gmail.com')">
     // ── State ──────────────────────────────────────────────────────────────
     let currentFilter = 'all';
     let currentUser = null;
+
+    // ── Demo Profiles ──────────────────────────────────────────────────────
+    const demoProfiles = [
+      {
+        id: 101,
+        name: 'Wildcat',
+        age: 29,
+        location: 'Red Deer, AB',
+        distance: '12 km away',
+        bio: 'Night shift nurse who unwinds with country music and bonfires. Looking for someone who doesn\'t mind a 3am text. 🔥🎶',
+        interests: ['🔥', '🎶', '🌙'],
+        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=Wildcat',
+        online: true,
+        inRadius: true,
+      },
+      {
+        id: 102,
+        name: 'NightNurse',
+        age: 34,
+        location: 'Lacombe, AB',
+        distance: '28 km away',
+        bio: 'ER nurse, coffee addict, dog mom. Off at 0700 and ready to grab breakfast. Swipe right if you\'re an early bird or a night owl. 🐾☕',
+        interests: ['🐾', '☕', '❤️'],
+        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=NightNurse',
+        online: true,
+        inRadius: true,
+      },
+      {
+        id: 103,
+        name: 'LongHaulLisa',
+        age: 41,
+        location: 'Ponoka, AB',
+        distance: '45 km away',
+        bio: 'Long-haul trucker. I\'ve seen every sunrise from a highway. Looking for someone real — no games, just good vibes and cold beer. 🚛🍺',
+        interests: ['🚛', '🍺', '🛣️'],
+        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=LongHaulLisa',
+        online: false,
+        inRadius: true,
+      },
+      {
+        id: 104,
+        name: 'RigRoughneck',
+        age: 38,
+        location: 'Innisfail, AB',
+        distance: '33 km away',
+        bio: '2 weeks on, 2 weeks off. When I\'m home I go hard — fishing, quads, and the occasional pub crawl. Let\'s make the off-weeks count. 🎣🏍️',
+        interests: ['🎣', '🏍️', '🍺'],
+        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=RigRoughneck',
+        online: false,
+        inRadius: false,
+      },
+      {
+        id: 105,
+        name: 'SecuritySam',
+        age: 26,
+        location: 'Sylvan Lake, AB',
+        distance: '52 km away',
+        bio: 'Security guard at the casino — I work while the world sleeps. Big into hiking, horror movies, and my two cats. Night owls only. 🐱🎬',
+        interests: ['🐱', '🎬', '🌙'],
+        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=SecuritySam',
+        online: true,
+        inRadius: true,
+      },
+    ];
 
     // ── Modal helpers ──────────────────────────────────────────────────────
     function openModal(id) {
@@ -845,19 +913,63 @@ centralalbertaafterdarkads@gmail.com')">
       currentFilter = f;
       document.querySelectorAll('.filter-card').forEach(el => el.classList.remove('active'));
       event.currentTarget.classList.add('active');
-      loadProfiles();
+      renderProfiles();
+    }
+
+    function renderProfiles() {
+      const container = document.getElementById('profiles-container');
+      let filtered = demoProfiles;
+
+      if (currentFilter === 'online') {
+        filtered = demoProfiles.filter(p => p.online);
+      }
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="empty-feed">🌙 No night owls match this filter right now.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(p => `
+        <div class="profile-row" id="profile-${p.id}">
+          <img class="thumbnail" src="${p.image}" alt="${p.name}" />
+          <div class="info">
+            <div class="name-age">${p.name}, ${p.age}</div>
+            <div class="location">📍 ${p.location} · ${p.distance}</div>
+            <div class="status-lights">
+              <span>
+                <span class="status-dot ${p.online ? 'online' : 'offline'}"></span>
+                ${p.online ? 'Online now' : 'Offline'}
+              </span>
+              <span>
+                <span class="status-dot ${p.inRadius ? 'in-radius' : 'out-radius'}"></span>
+                ${p.inRadius ? 'In your area' : 'Outside radius'}
+              </span>
+            </div>
+            <div class="bio-teaser">${p.bio}</div>
+            <div class="interests">${p.interests.join(' ')}</div>
+          </div>
+          <div class="buttons">
+            <button class="like-btn" onclick="likeProfile(${p.id})">❤️ Like</button>
+            <button class="pass-btn" onclick="passProfile(${p.id})">✕ Pass</button>
+          </div>
+        </div>
+      `).join('');
     }
 
     async function loadProfiles() {
-      const container = document.getElementById('profiles-container');
+      // Always render demo profiles first so visitors see content immediately.
+      renderProfiles();
+
+      // If a real user is logged in, also try to load real profiles from the API
+      // and append them after the demo profiles.
+      if (!currentUser) return;
       try {
         const res = await fetch('/api/profiles');
+        if (!res.ok) return;
         const profiles = await res.json();
-        if (!profiles.length) {
-          container.innerHTML = '<div class="empty-feed">🌙 No night owls found yet. Be the first!</div>';
-          return;
-        }
-        container.innerHTML = profiles.map(p => `
+        if (!profiles.length) return;
+        const container = document.getElementById('profiles-container');
+        const realHtml = profiles.map(p => `
           <div class="profile-row">
             <img class="thumbnail" src="https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(p.username)}" alt="${p.username}" />
             <div class="info">
@@ -866,34 +978,60 @@ centralalbertaafterdarkads@gmail.com')">
               ${p.bio ? '<div class="bio-teaser">' + p.bio.slice(0, 120) + (p.bio.length > 120 ? '…' : '') + '</div>' : ''}
             </div>
             <div class="buttons">
-              <button class="like-btn" onclick="likeProfile(${p.id})" ${currentUser ? '' : 'disabled'}>❤️ Like</button>
-              <button class="pass-btn">✕ Pass</button>
+              <button class="like-btn" onclick="likeProfile(${p.id})">❤️ Like</button>
+              <button class="pass-btn" onclick="passProfile(${p.id})">✕ Pass</button>
             </div>
           </div>
         `).join('');
-      } catch (err) {
-        container.innerHTML = '<div class="empty-feed">⚠️ Could not load profiles.</div>';
-      }
+        container.insertAdjacentHTML('beforeend', realHtml);
+      } catch (_) {}
     }
 
-    async function likeProfile(id) {
-      if (!currentUser) { openModal('login-modal'); return; }
-      try {
-        const csrfRes = await fetch('/api/csrf-token');
-        const { csrfToken } = await csrfRes.json();
-        const res = await fetch('/api/like/' + id, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken,
-          },
-          body: JSON.stringify({}),
-        });
-        const data = await res.json();
-        if (data.match) showToast('💛 It\'s a match!');
-        else showToast('❤️ Liked!');
-      } catch (_) {
-        showToast('⚠️ Could not send like.');
+    function likeProfile(id) {
+      if (!currentUser) {
+        openModal('login-modal');
+        showToast('🌙 Sign up or log in to like profiles!');
+        return;
+      }
+      // For demo profiles (id >= 101), show a fun toast
+      const demo = demoProfiles.find(p => p.id === id);
+      if (demo) {
+        showToast('❤️ You liked ' + demo.name + '! Sign up to see if it\'s a match.');
+        return;
+      }
+      // Real profile like via API
+      (async () => {
+        try {
+          const csrfRes = await fetch('/api/csrf-token');
+          const { csrfToken } = await csrfRes.json();
+          const res = await fetch('/api/like/' + id, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+            },
+            body: JSON.stringify({}),
+          });
+          const data = await res.json();
+          if (data.match) showToast('💛 It\'s a match!');
+          else showToast('❤️ Liked!');
+        } catch (_) {
+          showToast('⚠️ Could not send like.');
+        }
+      })();
+    }
+
+    function passProfile(id) {
+      const el = document.getElementById('profile-' + id);
+      if (el) {
+        el.style.transition = 'opacity 0.3s, transform 0.3s';
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(40px)';
+        setTimeout(() => el.remove(), 320);
+      }
+      const demo = demoProfiles.find(p => p.id === id);
+      if (demo) {
+        showToast('✕ Passed on ' + demo.name + '. More night owls await!');
       }
     }
 
