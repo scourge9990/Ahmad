@@ -552,7 +552,7 @@ app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, re
       cancel_url: `${APP_URL}/cancel.html`,
     });
     
-    res.redirect(303, checkoutSession.url);
+    res.json({ url: checkoutSession.url });
   } catch (err) {
     console.error('Stripe error:', err);
     res.status(500).json({ error: 'Failed to create checkout session.' });
