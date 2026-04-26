@@ -112,6 +112,10 @@ app.get('/api/csrf-token', csrfGenerateOnly, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 const db = new sqlite3.Database('./database.sqlite', (err) => {
   if (err) {
     console.error('Failed to open database:', err.message);
