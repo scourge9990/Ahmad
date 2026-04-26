@@ -20,7 +20,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'central-alberta-night-life-secret-key';
 
-const emailTransporter = nodemailer.createTransport({
+const SMTP_CONFIG = {
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587', 10),
   secure: process.env.SMTP_SECURE === 'true',
@@ -28,16 +28,47 @@ const emailTransporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+};
+
+console.log('[Email] Transporter config:', {
+  host: SMTP_CONFIG.host,
+  port: SMTP_CONFIG.port,
+  secure: SMTP_CONFIG.secure,
+  user: SMTP_CONFIG.auth.user || '(not set)',
+  passSet: !!SMTP_CONFIG.auth.pass,
 });
+
+const emailTransporter = nodemailer.createTransport(SMTP_CONFIG);
 
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@centralalbertaafterdark.com';
 const APP_URL = process.env.APP_URL || 'https://www.centralalbertaafterdark.com';
 
 async function sendEmail(to, subject, html) {
+  console.log(`[Email] sendEmail() called — to: ${to}, subject: "${subject}"`);
+  console.log('[Email] SMTP config at send time:', {
+    host: SMTP_CONFIG.host,
+    port: SMTP_CONFIG.port,
+    secure: SMTP_CONFIG.secure,
+    user: SMTP_CONFIG.auth.user || '(not set)',
+    passSet: !!SMTP_CONFIG.auth.pass,
+    from: FROM_EMAIL,
+  });
+
+  if (!SMTP_CONFIG.auth.user || !SMTP_CONFIG.auth.pass) {
+    console.error('[Email] SMTP_USER or SMTP_PASS is not set — aborting send.');
+    return;
+  }
+
   try {
-    await emailTransporter.sendMail({ from: FROM_EMAIL, to, subject, html });
+    const info = await emailTransporter.sendMail({ from: FROM_EMAIL, to, subject, html });
+    console.log(`[Email] Message sent successfully — messageId: ${info.messageId}, response: ${info.response}`);
   } catch (err) {
-    console.error('Email send error:', err);
+    console.error('[Email] sendMail() threw an error:');
+    console.error(`[Email]   message : ${err.message}`);
+    console.error(`[Email]   code    : ${err.code || '(none)'}`);
+    console.error(`[Email]   command : ${err.command || '(none)'}`);
+    console.error(`[Email]   response: ${err.response || '(none)'}`);
+    console.error('[Email] Full error object:', err);
   }
 }
 
@@ -114,6 +145,33 @@ app.get('/api/csrf-token', csrfGenerateOnly, (req, res) => {
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+app.get('/test-email', async (req, res) => {
+  const to = req.query.to || FROM_EMAIL;
+  console.log(`[Email] /test-email triggered — sending test email to: ${to}`);
+  try {
+    await sendEmail(
+      to,
+      'Central Alberta After Dark — SMTP test',
+      '<p>This is a test email sent from the <strong>/test-email</strong> endpoint to verify that the nodemailer transporter is working correctly.</p>'
+    );
+    res.json({
+      success: true,
+      message: `Test email dispatched to ${to}. Check server logs for delivery confirmation or error details.`,
+      smtpConfig: {
+        host: SMTP_CONFIG.host,
+        port: SMTP_CONFIG.port,
+        secure: SMTP_CONFIG.secure,
+        user: SMTP_CONFIG.auth.user || '(not set)',
+        passSet: !!SMTP_CONFIG.auth.pass,
+        from: FROM_EMAIL,
+      },
+    });
+  } catch (err) {
+    console.error('[Email] /test-email caught unexpected error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 const db = new sqlite3.Database('/app/data/database.sqlite', (err) => {
