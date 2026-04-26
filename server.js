@@ -83,7 +83,7 @@ app.use(cookieParser());
 app.use(express.static('public'));
 
 app.use(session({
-  store: new SQLiteStore({ db: 'sessions.sqlite', dir: './' }),
+  store: new SQLiteStore({ db: 'sessions.sqlite', dir: '/app/data' }),
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -116,7 +116,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-const db = new sqlite3.Database('./database.sqlite', (err) => {
+const db = new sqlite3.Database('/app/data/database.sqlite', (err) => {
   if (err) {
     console.error('Failed to open database:', err.message);
     process.exit(1);
