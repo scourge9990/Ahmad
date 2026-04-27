@@ -11,6 +11,7 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const path = require('path');
+const fs = require('fs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
@@ -173,6 +174,8 @@ app.get('/test-email', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+fs.mkdirSync('/app/data', { recursive: true });
 
 const db = new sqlite3.Database('/app/data/database.sqlite', (err) => {
   if (err) {
