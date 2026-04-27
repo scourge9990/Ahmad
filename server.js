@@ -755,6 +755,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Central Alberta Night Life server running on http://localhost:${PORT}`);
+const PORT_NUM = parseInt(PORT, 10);
+app.listen(PORT_NUM, () => {
+  console.log(`Server listening on port ${PORT_NUM}`);
 });
