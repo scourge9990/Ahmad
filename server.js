@@ -336,22 +336,97 @@ app.post('/api/register', csrfProtection, [
 
 app.get('/api/verify-email', (req, res) => {
   const { token } = req.query;
+
+  const renderPage = (statusCode, title, heading, bodyHtml) => {
+    res.status(statusCode).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${title} — Central Alberta After Dark</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #0d0d0d;
+      color: #e8e8e8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2e2e2e;
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon { font-size: 3rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.75rem; }
+    p { color: #aaa; line-height: 1.6; margin-bottom: 1.5rem; }
+    a.btn {
+      display: inline-block;
+      background: #c0392b;
+      color: #fff;
+      text-decoration: none;
+      padding: 0.65rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+    }
+    a.btn:hover { background: #a93226; }
+    a.link { color: #c0392b; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    ${bodyHtml}
+  </div>
+</body>
+</html>`);
+  };
+
   if (!token || typeof token !== 'string') {
-    return res.status(400).json({ error: 'Invalid verification token.' });
+    return renderPage(400, 'Invalid Link', 'Invalid Link', `
+      <div class="icon">⚠️</div>
+      <h1>Invalid verification link</h1>
+      <p>This verification link is missing or malformed. Please request a new one.</p>
+      <a class="btn" href="${APP_URL}">Go to homepage</a>
+    `);
   }
-  
+
   db.run(
     `UPDATE users SET is_verified = 1, verification_token = NULL WHERE verification_token = ? AND is_verified = 0`,
     [token],
     function(err) {
       if (err) {
         console.error('DB Error:', err);
-        return res.status(500).json({ error: 'Database error' });
+        return renderPage(500, 'Server Error', 'Server Error', `
+          <div class="icon">❌</div>
+          <h1>Something went wrong</h1>
+          <p>A database error occurred while verifying your account. Please try again later or contact support.</p>
+          <a class="btn" href="${APP_URL}">Go to homepage</a>
+        `);
       }
       if (this.changes === 0) {
-        return res.status(400).json({ error: 'Invalid or already-used verification token.' });
+        return renderPage(400, 'Link Expired', 'Link Expired', `
+          <div class="icon">🔗</div>
+          <h1>Link already used or expired</h1>
+          <p>This verification link has already been used or has expired. If your account is not yet verified, you can request a new link.</p>
+          <a class="btn" href="${APP_URL}">Go to homepage</a>
+        `);
       }
-      res.redirect('/?verified=1');
+      renderPage(200, 'Email Verified', 'Email Verified', `
+        <div class="icon">✅</div>
+        <h1>Email verified!</h1>
+        <p>Your account has been successfully verified. You can now log in and enjoy Central Alberta After Dark.</p>
+        <a class="btn" href="${APP_URL}">Go to homepage</a>
+      `);
     }
   );
 });
