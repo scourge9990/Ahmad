@@ -14,6 +14,8 @@ const path = require('path');
 const fs = require('fs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+fs.mkdirSync('/app/data', { recursive: true });
+
 const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
@@ -174,8 +176,6 @@ app.get('/test-email', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
-fs.mkdirSync('/app/data', { recursive: true });
 
 const db = new sqlite3.Database('/app/data/database.sqlite', (err) => {
   if (err) {
