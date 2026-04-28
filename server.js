@@ -14,7 +14,10 @@ const path = require('path');
 const fs = require('fs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+<<<<<<< railway/code-change-bOkEUo
+=======
 // Ensure the data directory exists before any middleware or DB code runs
+>>>>>>> main
 fs.mkdirSync('/app/data', { recursive: true });
 
 const app = express();
