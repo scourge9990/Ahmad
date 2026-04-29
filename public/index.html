@@ -879,6 +879,8 @@ centralalbertaafterdarkads@gmail.com')">
     // ── Sign Up ────────────────────────────────────────────────────────────
     async function handleSignup(e) {
       e.preventDefault();
+      console.log('[handleSignup] Signup form submitted');
+
       const btn = document.getElementById('signup-submit-btn');
       const msg = document.getElementById('signup-msg');
       btn.disabled = true;
@@ -890,6 +892,19 @@ centralalbertaafterdarkads@gmail.com')">
       const password = document.getElementById('signup-password').value;
       const age      = document.getElementById('signup-age').value;
 
+      console.log('[handleSignup] Form data:', { email, username, password: password ? '(set)' : '(empty)', age });
+
+      if (!email || !username || !password) {
+        msg.className = 'modal-msg error';
+        msg.textContent = 'Email, username, and password are required.';
+        console.warn('[handleSignup] Validation failed — missing required fields');
+        btn.disabled = false;
+        return;
+      }
+
+      const payload = { email, username, password, age: age ? parseInt(age, 10) : undefined };
+      console.log('[handleSignup] Sending POST /api/register with payload:', { ...payload, password: '(redacted)' });
+
       try {
         const csrfRes = await fetch('/api/csrf-token');
         const { csrfToken } = await csrfRes.json();
@@ -900,18 +915,25 @@ centralalbertaafterdarkads@gmail.com')">
             'Content-Type': 'application/json',
             'X-CSRF-Token': csrfToken,
           },
-          body: JSON.stringify({ email, username, password, age: age ? parseInt(age, 10) : undefined }),
+          body: JSON.stringify(payload),
         });
+
+        console.log('[handleSignup] Response status:', res.status);
         const data = await res.json();
+        console.log('[handleSignup] Response body:', data);
+
         if (res.ok && data.success) {
           msg.className = 'modal-msg success';
-          msg.textContent = data.message || 'Account created! Check your email to verify.';
+          msg.textContent = 'Account created! Check your email to verify.';
           document.getElementById('signup-form').reset();
+          console.log('[handleSignup] Registration successful');
         } else {
           msg.className = 'modal-msg error';
           msg.textContent = data.error || 'Sign up failed.';
+          console.error('[handleSignup] Registration failed:', data.error || data);
         }
       } catch (err) {
+        console.error('[handleSignup] Network or parse error:', err);
         msg.className = 'modal-msg error';
         msg.textContent = 'Network error. Please try again.';
       } finally {
