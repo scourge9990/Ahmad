@@ -1180,7 +1180,10 @@ centralalbertaafterdarkads@gmail.com')">
 
       const btn = document.getElementById('resend-btn');
       const msg = document.getElementById('resend-msg');
-      const email = document.getElementById('resend-email').value.trim();
+      console.log('[handleResendVerification] Input element:', document.getElementById('resend-email'));
+      console.log('[handleResendVerification] Raw email value:', document.getElementById('resend-email').value);
+      const emailInput = document.getElementById('resend-email');
+      const email = emailInput ? emailInput.value.trim() : '';
 
       msg.className = 'modal-msg';
       msg.textContent = '';
