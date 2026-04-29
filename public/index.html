@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Central Alberta After Dark</title>
   
-  <!-- ✅ FIXED: Explicit favicon to prevent 404 /favicon.ico -->
-  <link rel="icon" type="image/x-icon" href="https://flagcdn.com/w160/ab.png">
   
   <style>
     * {
@@ -649,16 +647,17 @@ onclick="switchModal('login-modal','signup-modal')">Sign Up</a>
         <div class="resend-divider">
           <span>Didn't receive your verification email?</span>
         </div>
-        <div class="modal-field">
-          <label for="resend-email">Your email address</label>
-          <input type="email" id="resend-email" name="resend-email"
-            placeholder="you@example.com" autocomplete="email" />
-        </div>
-        <button type="button" id="resend-btn" class="resend-submit"
-          onclick="handleResendVerification(event)">
-          Resend Verification Email
-        </button>
-        <div id="resend-msg" class="modal-msg"></div>
+        <form onsubmit="handleResendVerification(event)">
+          <div class="modal-field">
+            <label for="resend-email">Your email address</label>
+            <input type="email" id="resend-email" name="resend-email"
+              placeholder="you@example.com" autocomplete="email" />
+          </div>
+          <button type="submit" id="resend-btn" class="resend-submit">
+            Resend Verification Email
+          </button>
+          <div id="resend-msg" class="modal-msg"></div>
+        </form>
       </div>
     </div>
   </div>
@@ -707,8 +706,7 @@ onclick="switchModal('signup-modal','login-modal')">Log In</a>
   </div>
 
   <header>
-    <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta 
-flag left" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
+    <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag left" class="flag">
    
     <div class="title-group">
       <h1 class="central">Central</h1>
@@ -718,8 +716,7 @@ flag left" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
 prime time 🌙✨</p>
     </div>
    
-    <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta 
-flag right" class="flag" onerror="this.src='https://flagcdn.com/w160/ab.png'">
+    <img src="https://www.flagcolorcodes.com/filter?f=alberta&e=waves" alt="Alberta flag right" class="flag">
    
     <div class="auth-block">
       <button class="auth-btn" id="header-login-btn" 
