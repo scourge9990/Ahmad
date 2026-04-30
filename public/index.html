@@ -1149,50 +1149,41 @@ centralalbertaafterdarkads@gmail.com')">
     // ── Resend Verification Email ──────────────────────────────────────────
     async function handleResendVerification(e) {
       e.preventDefault();
-      console.log('[handleResendVerification] Resend button clicked');
 
+      const emailInput = document.getElementById('resend-email');
+      const emailValue = emailInput ? emailInput.value.trim() : '';
       const btn = document.getElementById('resend-btn');
       const msg = document.getElementById('resend-msg');
-      console.log('[handleResendVerification] Input element:', document.getElementById('resend-email'));
-      console.log('[handleResendVerification] Raw email value:', document.getElementById('resend-email').value);
-      const emailInput = document.getElementById('resend-email');
-      const email = emailInput ? emailInput.value.trim() : '';
 
       msg.className = 'modal-msg';
       msg.textContent = '';
 
-      if (!email) {
+      if (!emailValue) {
         msg.className = 'modal-msg error';
         msg.textContent = 'Please enter your email address.';
-        console.warn('[handleResendVerification] No email provided');
         return;
       }
 
-      console.log('[handleResendVerification] Sending resend request for:', email);
       btn.disabled = true;
 
       try {
         const res = await secureFetch('/api/resend-verification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email: emailValue }),
         });
 
-        console.log('[handleResendVerification] Response status:', res.status);
         const data = await res.json();
-        console.log('[handleResendVerification] Response body:', data);
 
         if (res.ok) {
           msg.className = 'modal-msg success';
           msg.textContent = 'If that email is registered and unverified, a new verification email has been sent.';
-          document.getElementById('resend-email').value = '';
+          emailInput.value = '';
         } else {
           msg.className = 'modal-msg error';
           msg.textContent = data.error || 'Something went wrong. Please try again.';
-          console.error('[handleResendVerification] Error response:', data.error || data);
         }
       } catch (err) {
-        console.error('[handleResendVerification] Network or parse error:', err);
         msg.className = 'modal-msg error';
         msg.textContent = 'Network error. Please try again.';
       } finally {
