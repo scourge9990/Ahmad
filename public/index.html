@@ -932,9 +932,13 @@ centralalbertaafterdarkads@gmail.com')">
     }
 
     // ── Sign Up ────────────────────────────────────────────────────────────
-    async function handleSignup(e) {
-      e.preventDefault();
-      console.log('[handleSignup] Signup form submitted');
+    async function handleSignup(event) {
+      event.preventDefault();
+
+      const email    = document.getElementById('signup-email').value.trim();
+      const username = document.getElementById('signup-username').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const age      = document.getElementById('signup-age').value;
 
       const btn = document.getElementById('signup-submit-btn');
       const msg = document.getElementById('signup-msg');
@@ -942,53 +946,25 @@ centralalbertaafterdarkads@gmail.com')">
       msg.className = 'modal-msg';
       msg.textContent = '';
 
-      const email    = document.getElementById('signup-email').value.trim();
-      const username = document.getElementById('signup-username').value.trim();
-      const password = document.getElementById('signup-password').value;
-      const age      = document.getElementById('signup-age').value;
-
-      console.log('[handleSignup] Form data:', { email, username, password: password ? '(set)' : '(empty)', age });
-
-      if (!email || !username || !password) {
-        msg.className = 'modal-msg error';
-        msg.textContent = 'Email, username, and password are required.';
-        console.warn('[handleSignup] Validation failed — missing required fields');
-        btn.disabled = false;
-        return;
-      }
-
-      const payload = { email, username, password, age: age ? parseInt(age, 10) : undefined };
-      console.log('[handleSignup] Sending POST /api/register with payload:', { ...payload, password: '(redacted)' });
-
       try {
-        const csrfRes = await fetch('/api/csrf-token');
-        const { csrfToken } = await csrfRes.json();
-
-        const res = await fetch('/api/register', {
+        const res = await secureFetch('/api/register', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken,
-          },
-          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, username, password, age }),
         });
 
-        console.log('[handleSignup] Response status:', res.status);
         const data = await res.json();
-        console.log('[handleSignup] Response body:', data);
 
-        if (res.ok && data.success) {
+        if (res.ok) {
           msg.className = 'modal-msg success';
           msg.textContent = 'Account created! Check your email to verify.';
           document.getElementById('signup-form').reset();
-          console.log('[handleSignup] Registration successful');
+          closeModal('signup-modal');
         } else {
           msg.className = 'modal-msg error';
           msg.textContent = data.error || 'Sign up failed.';
-          console.error('[handleSignup] Registration failed:', data.error || data);
         }
       } catch (err) {
-        console.error('[handleSignup] Network or parse error:', err);
         msg.className = 'modal-msg error';
         msg.textContent = 'Network error. Please try again.';
       } finally {
