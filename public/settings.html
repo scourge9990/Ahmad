@@ -75,12 +75,10 @@
       cursor: pointer;
       font-family: 'Impact', 'Arial Black', sans-serif;
     }
-    .btn-primary {
-      background: #FFEB43;
-      color: #003594;
-    }
+    .btn-primary { background: #FFEB43; color: #003594; }
     .btn-primary:hover {
-      background: #fff;
+      background: rgba(255,235,67,0.8);
+      border-color: rgba(255,235,67,0.8);
     }
     .btn-secondary {
       background: transparent;
@@ -88,6 +86,7 @@
     }
     .btn-secondary:hover {
       background: rgba(255,235,67,0.2);
+      border-color: #FFEB43;
     }
     .btn-secondary:disabled {
       opacity: 0.5;
@@ -507,6 +506,7 @@
         toast.className = 'msg error';
         toast.textContent = '✗ Network error';
         toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
       }
     }
     
