@@ -283,6 +283,7 @@
       try {
         const res = await fetch('/api/me', {
           method: 'PUT',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
             'X-CSRF-Token': csrf,
