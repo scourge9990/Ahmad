@@ -98,9 +98,27 @@
       border-radius: 8px;
       margin-bottom: 1rem;
       display: none;
+      font-weight: bold;
+      text-align: center;
+      animation: pulse 0.5s ease-in-out;
     }
-    .msg.success { background: rgba(76,175,80,0.9); color: #fff; display: block; }
-    .msg.error { background: rgba(244,67,54,0.9); color: #fff; display: block; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .msg.success { 
+      background: #FFEB43; 
+      color: #003594; 
+      display: block;
+      font-size: 1.2rem;
+      border: 3px solid #fff;
+    }
+    .msg.error { 
+      background: #ff4444; 
+      color: #fff; 
+      display: block;
+      border: 3px solid #fff;
+    }
     
     .logout-link {
       color: #FFEB43;
