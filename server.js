@@ -122,6 +122,23 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
+
+// Session middleware NOW (before upload endpoint)
+app.use(session({
+  store: new SQLiteStore({ db: 'sessions.sqlite', dir: DATA_DIR }),
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  name: 'sessionId',
+  cookie: {
+    secure: IS_PRODUCTION,
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    sameSite: 'lax',
+    domain: IS_PRODUCTION ? '.centralalbertaafterdark.com' : undefined,
+  }
+}));
+
 // Serve uploads folder
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -169,21 +186,6 @@ app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
 });
 
 app.use(express.static('public'));
-
-app.use(session({
-  store: new SQLiteStore({ db: 'sessions.sqlite', dir: DATA_DIR }),
-  secret: SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  name: 'sessionId',
-  cookie: {
-    secure: IS_PRODUCTION,
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax',
-    domain: IS_PRODUCTION ? 'centralalbertaafterdark.com' : undefined,
-  },
-}));
 
 const csrfProtection = csrf({ cookie: { httpOnly: true }, secret: SESSION_SECRET });
 
