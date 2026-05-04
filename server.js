@@ -168,6 +168,8 @@ app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Invalid file type. Use jpg, png, or webp.' });
   
   const photoUrl = '/uploads/' + req.file.filename;
+  const positionX = req.body.positionX || 0;
+  const positionY = req.body.positionY || 0;
   
   // Get current photos
   db.get('SELECT photos FROM profiles WHERE user_id = ?', [req.session.userId], (err, row) => {
@@ -177,7 +179,7 @@ app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
     }
     // Add new photo (max 4 photos)
     if (photos.length >= 4) photos.shift();
-    photos.push(photoUrl);
+    photos.push({ url: photoUrl, x: positionX, y: positionY });
     
     db.run('UPDATE profiles SET photos = ? WHERE user_id = ?', [JSON.stringify(photos), req.session.userId]);
     res.json({ url: photoUrl, photos });
