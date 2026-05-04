@@ -386,27 +386,28 @@
     }
     
     // Drag handling
-    // Simplified drag handling - direct from mouse position
+    // Simple drag - just move image with mouse
     document.addEventListener('DOMContentLoaded', () => {
       const frame = document.getElementById('photo-preview-frame');
       const img = document.getElementById('photo-preview-img');
       if (!frame || !img) return;
-      let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
+      let isDragging = false, startX, startY, startPosX, startPosY;
       frame.addEventListener('mousedown', (e) => {
         isDragging = true;
-        const rect = img.getBoundingClientRect();
-        dragOffsetX = e.clientX - rect.left;
-        dragOffsetY = e.clientY - rect.top;
+        startX = e.clientX;
+        startY = e.clientY;
+        startPosX = photoPosition.x;
+        startPosY = photoPosition.y;
         frame.style.cursor = 'grabbing';
         e.preventDefault();
       });
       document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        const frameRect = frame.getBoundingClientRect();
-        let newX = e.clientX - frameRect.left - dragOffsetX;
-        let newY = e.clientY - frameRect.top - dragOffsetY;
-        photoPosition.x = Math.max(-100, Math.min(100, newX));
-        photoPosition.y = Math.max(-100, Math.min(100, newY));
+        photoPosition.x = startPosX + (e.clientX - startX);
+        photoPosition.y = startPosY + (e.clientY - startY);
+        // Clamp
+        photoPosition.x = Math.max(-100, Math.min(100, photoPosition.x));
+        photoPosition.y = Math.max(-100, Math.min(100, photoPosition.y));
         img.style.transform = `translate(${photoPosition.x}px, ${photoPosition.y}px)`;
       });
       document.addEventListener('mouseup', () => { isDragging = false; frame.style.cursor = 'grab'; });
