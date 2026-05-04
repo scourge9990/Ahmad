@@ -337,6 +337,17 @@ z-index: 2; }
     }
     .like-btn:hover { transform: scale(1.05); background: #158f38; }
     .pass-btn:hover { transform: scale(1.05); background: #ff4444; }
+    .ai-match-btn {
+      background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+    .ai-match-btn:hover { transform: scale(1.05); background: #a569bd; }
     .like-btn:disabled { background: #666; opacity: 0.5; cursor: not-allowed; }
    
     #chat-bar {
@@ -1054,13 +1065,17 @@ centralalbertaafterdarkads@gmail.com')">
         const container = document.getElementById('profiles-container');
         const realHtml = profiles.map(p => `
           <div class="profile-row">
-            <img class="thumbnail" src="https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(p.username)}" alt="${p.username}" />
+            <img class="thumbnail" src="${p.photos?.[0] || 'https://api.dicebear.com/7.x/thumbs/svg?seed=' + encodeURIComponent(p.username)}" alt="${p.username}" />
             <div class="info">
-              <div class="name-age">${p.username}${p.age ? ', ' + p.age : ''}</div>
+              <div class="name-age">${p.username}${p.age ? ', ' + p.age : ''}
+                ${p.match_score ? '<span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">' + p.match_score + '% match</span>' : ''}
+              </div>
               ${p.location ? '<div class="location">📍 ' + p.location + '</div>' : ''}
               ${p.bio ? '<div class="bio-teaser">' + p.bio.slice(0, 120) + (p.bio.length > 120 ? '…' : '') + '</div>' : ''}
+              <div id="ai-match-${p.id}" style="margin-top:0.5rem;font-size:0.8rem;color:#FFEB43;"></div>
             </div>
             <div class="buttons">
+              ${currentUser.isPremium ? '<button class="ai-match-btn" onclick="aiMatch(' + p.id + ')">🤖 AI Match</button>' : '<div style="font-size:0.7rem;color:#aaa;margin-bottom:4px;">🔒 Night Owl Premium: Deep matching</div>'}
               <button class="like-btn" onclick="likeProfile(${p.id})">❤️ Like</button>
               <button class="pass-btn" onclick="passProfile(${p.id})">✕ Pass</button>
             </div>
@@ -1068,6 +1083,29 @@ centralalbertaafterdarkads@gmail.com')">
         `).join('');
         container.insertAdjacentHTML('beforeend', realHtml);
       } catch (_) {}
+    }
+    
+    async function aiMatch(profileId) {
+      const container = document.getElementById('ai-match-' + profileId);
+      container.innerHTML = '🤖 Analyzing...';
+      try {
+        const res = await fetch('/api/ai-match', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': await getCsrfToken() },
+          body: JSON.stringify({ target_id: profileId })
+        });
+        const data = await res.json();
+        if (data.premium_required) {
+          container.innerHTML = '<a href="/settings.html" style="color:#FFEB43;">🔒 Upgrade for AI matching</a>';
+        } else if (data.explanation) {
+          container.innerHTML = '✨ ' + data.explanation;
+        } else {
+          container.innerHTML = data.error || 'Could not generate match';
+        }
+      } catch (e) {
+        container.innerHTML = 'Error';
+      }
     }
 
     function likeProfile(id) {

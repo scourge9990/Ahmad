@@ -727,18 +727,142 @@ app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
 });
 
 app.get('/api/profiles', (req, res) => {
+  const currentUserId = req.session?.userId;
+  
   db.all(
-    `SELECT id, username, age, location, bio FROM users WHERE is_verified = 1 AND (id != ? OR ? IS NULL)`,
-    [req.session?.userId || null, req.session?.userId || null],
+    `SELECT id, username, age, location, bio, shift_schedule, interests, looking_for, is_premium FROM users WHERE is_verified = 1 AND (id != ? OR ? IS NULL)`,
+    [currentUserId || null, currentUserId || null],
     (err, rows) => {
       if (err) {
         console.error('DB Error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
-      res.json(rows);
+      
+      // Get current user for compatibility scoring
+      if (currentUserId) {
+        db.get(`SELECT * FROM users WHERE id = ?`, [currentUserId], (err, currentUser) => {
+          if (currentUser) {
+            // Calculate compatibility for each profile
+            rows = rows.map(profile => ({
+              ...profile,
+              match_score: calculateCompatibility(currentUser, profile)
+            }));
+          }
+          res.json(rows);
+        });
+      } else {
+        res.json(rows);
+      }
     }
   );
 });
+
+// Calculate compatibility score between two users
+function calculateCompatibility(user1, user2) {
+  let score = 0;
+  let factors = 0;
+  
+  // Age compatibility
+  if (user1.age && user2.age) {
+    const ageDiff = Math.abs(user1.age - user2.age);
+    if (ageDiff <= 3) score += 30;
+    else if (ageDiff <= 10) score += 15;
+    factors++;
+  }
+  
+  // Location matching
+  if (user1.location && user2.location && user1.location === user2.location) {
+    score += 25;
+    factors++;
+  }
+  
+  // Shift schedule compatibility
+  if (user1.shift_schedule && user2.shift_schedule && user1.shift_schedule === user2.shift_schedule) {
+    score += 25;
+    factors++;
+  }
+  
+  // Interests overlap
+  if (user1.interests && user2.interests) {
+    const interests1 = (user1.interests || '').toLowerCase().split(/[,\s]+/).filter(Boolean);
+    const interests2 = (user2.interests || '').toLowerCase().split(/[,\s]+/).filter(Boolean);
+    const overlap = interests1.filter(i => interests2.includes(i)).length;
+    if (interests1.length + interests2.length > 0) {
+      score += (overlap / (interests1.length + interests2.length)) * 20;
+    }
+    factors++;
+  }
+  
+  return factors > 0 ? Math.min(100, Math.round(score)) : null;
+}
+
+// AI Match endpoint (premium only)
+app.post('/api/ai-match', requireAuth, csrfProtection, async (req, res) => {
+  const targetId = req.body.target_id;
+  if (!targetId) return res.status(400).json({ error: 'Target required' });
+  
+  // Check premium
+  if (!req.session.isPremium) {
+    return res.status(403).json({ error: 'Premium required', premium_required: true });
+  }
+  
+  try {
+    const target = await new Promise((resolve, reject) => {
+      db.get(`SELECT * FROM users WHERE id = ?`, [targetId], (err, row) => {
+        if (err) reject(err); else resolve(row);
+      });
+    });
+    
+    const currentUser = await new Promise((resolve, reject) => {
+      db.get(`SELECT * FROM users WHERE id = ?`, [req.session.userId], (err, row) => {
+        if (err) reject(err); else resolve(row);
+      });
+    });
+    
+    if (!target || !currentUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Generate AI match explanation
+    const explanation = generateAiMatchExplanation(currentUser, target);
+    
+    res.json({ explanation, success: true });
+  } catch (err) {
+    console.error('AI Match error:', err);
+    res.status(500).json({ error: 'AI matching failed' });
+  }
+});
+
+function generateAiMatchExplanation(user1, user2) {
+  const reasons = [];
+  
+  if (user1.age && user2.age && Math.abs(user1.age - user2.age) <= 5) {
+    reasons.push('Similar age range');
+  }
+  if (user1.location === user2.location) {
+    reasons.push(`Both in ${user1.location}`);
+  }
+  if (user1.shift_schedule === user2.shift_schedule) {
+    reasons.push('Same shift schedule');
+  }
+  if (user1.interests && user2.interests) {
+    const i1 = (user1.interests || '').toLowerCase().split(/[,\s]+/).filter(Boolean);
+    const i2 = (user2.interests || '').toLowerCase().split(/[,\s]+/).filter(Boolean);
+    const shared = i1.filter(i => i2.includes(i));
+    if (shared.length > 0) {
+      reasons.push(`Shared interests: ${shared.join(', ')}`);
+    }
+  }
+  if (user1.looking_for === user2.looking_for) {
+    reasons.push(`Looking for the same: ${user1.looking_for}`);
+  }
+  
+  if (reasons.length === 0) {
+    reasons.push('Great potential match!');
+  }
+  
+  return reasons.join('. ');
+}
 
 app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
   const likedId = parseInt(req.params.id, 10);
