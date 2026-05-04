@@ -161,11 +161,8 @@ const upload = multer({
 });
 
 // Photo upload endpoint
-app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
-  console.log('Upload request, session:', req.session?.userId, 'file:', req.file?.filename);
-  if (!req.session || !req.session.userId) {
-    return res.status(401).json({ error: 'Please log in' });
-  }
+app.post('/api/upload-photo', requireAuth, upload.single('photo'), (req, res) => {
+  console.log('Upload for user:', req.session?.userId, 'file:', req.file?.filename);
   if (!req.file) return res.status(400).json({ error: 'Invalid file type. Use jpg, png, or webp.' });
   
   const photoUrl = '/uploads/' + req.file.filename;
@@ -191,7 +188,7 @@ app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
         console.log('Update error:', err.message);
         return res.status(500).json({ error: 'Save failed' });
       }
-      console.log('Photo saved:', photoUrl);
+      console.log('Photo saved for user:', req.session.userId);
       res.json({ url: photoUrl, photos });
     });
   });
