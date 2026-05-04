@@ -1,29 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Thanks for your order!</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="client.js" defer></script>
+  <title>Welcome to Night Owl! 🦉</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      padding: 2rem;
+    }
+    .container {
+      text-align: center;
+      max-width: 500px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .owl { font-size: 4rem; margin-bottom: 1rem; }
+    p { color: #aaa; font-size: 1.1rem; margin-bottom: 2rem; }
+    .btn {
+      display: inline-block;
+      padding: 1rem 2rem;
+      background: #c0392b;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    .btn:hover { background: #a93226; }
+    .premium-badge {
+      display: inline-block;
+      background: #c0392b;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 1.2rem;
+      margin: 1rem 0;
+    }
+  </style>
 </head>
 <body>
-  <section>
-    <div class="product Box-root">
-      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14px" height="16px" viewBox="0 0 14 16" version="1.1">
-          <defs/>
-          <g id="Flow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-              <g id="0-Default" transform="translate(-121.000000, -40.000000)" fill="#E184DF">
-                  <path d="M127,50 L126,50 C123.238576,50 121,47.7614237 121,45 C121,42.2385763 123.238576,40 126,40 L135,40 L135,56 L133,56 L133,42 L129,42 L129,56 L127,56 L127,50 Z M127,48 L127,42 L126,42 C124.343146,42 123,43.3431458 123,45 C123,46.6568542 124.343146,48 126,48 L127,48 Z" id="Pilcrow"/>
-              </g>
-          </g>
-      </svg>
-      <div class="description Box-root">
-        <h3>Subscription to Starter plan successful!</h3>
-      </div>
-    </div>
-    <form action="/create-portal-session" method="POST">
-      <input type="hidden" id="session-id" name="session_id" value="" />
-      <button id="checkout-and-portal-button" type="submit">Manage your billing information</button>
-    </form>
-  </section>
+  <div class="container">
+    <div class="owl">🎉</div>
+    <h1>Congratulations!</h1>
+    <div class="premium-badge">🌙 You're a Full-Fledged Night Owl! 🦉</div>
+    <p>Welcome to the night shift dating community. Your premium membership is now active.</p>
+    <a href="/" class="btn">Start Browsing Profiles</a>
+  </div>
 </body>
 </html>
