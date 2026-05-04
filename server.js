@@ -123,7 +123,7 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
-// Session middleware NOW (before upload endpoint)
+// Session middleware
 app.use(session({
   store: new SQLiteStore({ db: 'sessions.sqlite', dir: DATA_DIR }),
   secret: SESSION_SECRET,
@@ -134,8 +134,7 @@ app.use(session({
     secure: IS_PRODUCTION,
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: 'lax',
-    domain: IS_PRODUCTION ? '.centralalbertaafterdark.com' : undefined,
+    sameSite: 'lax'
   }
 }));
 
@@ -161,10 +160,11 @@ const upload = multer({
   }
 });
 
-// Photo upload endpoint - inline auth check
+// Photo upload endpoint
 app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
+  console.log('Upload hit, session:', req.session);
   if (!req.session || !req.session.userId) {
-    return res.status(401).json({ error: 'Please log in' });
+    return res.status(401).json({ error: 'Please log in', hasSession: !!req.session, hasUserId: !!(req.session && req.session.userId) });
   }
   if (!req.file) return res.status(400).json({ error: 'Invalid file type. Use jpg, png, or webp.' });
   

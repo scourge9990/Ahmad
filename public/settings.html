@@ -234,6 +234,7 @@
       try {
         const res = await fetch('/api/upload-photo', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'X-CSRF-Token': await getCsrfToken() },
           body: formData
         });
