@@ -3,65 +3,95 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Settings — Central Alberta After Dark</title>
+  <title>My Profile — Central Alberta After Dark</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: #0d0d0d;
-      color: #e8e8e8;
+      font-family: Arial, sans-serif;
+      background: #003594 url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&q=60&w=2000') no-repeat center center fixed;
+      background-size: cover;
+      color: #FFFFFF;
       min-height: 100vh;
       padding: 2rem;
     }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(to bottom, transparent 25%, rgba(0,53,148,0.7) 50%, rgba(0,53,148,0.95) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
     .container {
+      position: relative;
+      z-index: 1;
       max-width: 600px;
       margin: 0 auto;
     }
-    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; color: #fff; }
-    .subtitle { color: #888; margin-bottom: 2rem; }
+    h1 { 
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 2rem; 
+      margin-bottom: 0.5rem; 
+      color: #FFEB43;
+    }
+    .subtitle { color: #ddd; margin-bottom: 2rem; }
     
     .card {
-      background: #1a1a1a;
-      border: 1px solid #2e2e2e;
+      background: linear-gradient(135deg, rgba(0,53,148,0.95), rgba(13,54,146,0.95));
+      border: 2px solid #FFEB43;
       border-radius: 12px;
       padding: 1.5rem;
       margin-bottom: 1.5rem;
     }
     .card h2 {
-      font-size: 1.1rem;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 1.2rem;
       margin-bottom: 1rem;
-      color: #fff;
+      color: #FFEB43;
     }
     
     .form-group { margin-bottom: 1rem; }
-    label { display: block; margin-bottom: 0.5rem; color: #aaa; font-size: 0.9rem; }
+    label { display: block; margin-bottom: 0.5rem; color: #ddd; }
     input, textarea, select {
       width: 100%;
       padding: 0.75rem;
-      border: 1px solid #333;
+      border: 2px solid #FFEB43;
       border-radius: 8px;
-      background: #111;
-      color: #fff;
+      background: rgba(255,255,255,0.9);
+      color: #003594;
       font-size: 1rem;
     }
-    textarea { min-height: 100px; resize: vertical; }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      background: #fff;
+    }
+    textarea { min-height: 80px; resize: vertical; }
     
     .btn {
       padding: 0.75rem 1.5rem;
-      border: none;
+      border: 2px solid #FFEB43;
       border-radius: 8px;
       font-size: 1rem;
+      font-weight: bold;
       cursor: pointer;
-      font-weight: 600;
+      font-family: 'Impact', 'Arial Black', sans-serif;
     }
     .btn-primary {
-      background: #c0392b;
-      color: #fff;
+      background: #FFEB43;
+      color: #003594;
+    }
+    .btn-primary:hover {
+      background: #fff;
     }
     .btn-secondary {
-      background: #333;
-      color: #fff;
-      margin-right: 0.5rem;
+      background: transparent;
+      color: #FFEB43;
+    }
+    .btn-secondary:hover {
+      background: rgba(255,235,67,0.2);
+    }
+    .btn-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
     
     .msg {
@@ -70,32 +100,54 @@
       margin-bottom: 1rem;
       display: none;
     }
-    .msg.success { background: #1a3d1a; color: #4caf50; display: block; }
-    .msg.error { background: #3d1a1a; color: #f44336; display: block; }
+    .msg.success { background: rgba(76,175,80,0.9); color: #fff; display: block; }
+    .msg.error { background: rgba(244,67,54,0.9); color: #fff; display: block; }
     
     .logout-link {
-      color: #888;
+      color: #FFEB43;
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 1rem;
+      font-weight: bold;
     }
     .logout-link:hover { color: #fff; }
     
     .premium-badge {
       display: inline-block;
-      background: #c0392b;
-      color: #fff;
+      background: #FFEB43;
+      color: #003594;
       padding: 0.25rem 0.75rem;
       border-radius: 20px;
       font-size: 0.8rem;
       margin-left: 0.5rem;
+      font-weight: bold;
+    }
+    
+    .photo-thumb {
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.2);
+    }
+    .photo-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    @media (max-width: 600px) {
+      body { padding: 1rem; }
+      h1 { font-size: 1.5rem; }
+      .card { padding: 1rem; }
     }
   </style>
 </head>
 <body>
+  <div class="overlay"></div>
   <div class="container">
     <a href="/" class="logout-link">← Back to profiles</a>
     
-    <h1>Your Settings</h1>
+    <h1>My Profile</h1>
     <p class="subtitle">Manage your profile and preferences</p>
     
     <div id="toast" class="msg"></div>
@@ -216,10 +268,10 @@
     
     function renderPhotos(photos) {
       const container = document.getElementById('photos-container');
-      container.innerHTML = photos.map((url, i) => 
-        `<div style="position:relative;width:100px;height:100px;border-radius:8px;overflow:hidden;background:#222;">
+      container.innerHTML = photos.map((url, i) =>
+        `<div style="position:relative;width:100px;height:100px;border-radius:8px;overflow:hidden;border:2px solid #FFEB43;">
           <img src="${url}" style="width:100%;height:100%;object-fit:cover;" />
-          <button onclick="deletePhoto(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;">✕</button>
+          <button onclick="deletePhoto(${i})" style="position:absolute;top:2px;right:2px;background:#FFEB43;color:#003594;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;font-weight:bold;">✕</button>
         </div>`
       ).join('');
     }
