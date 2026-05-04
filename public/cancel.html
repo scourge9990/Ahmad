@@ -1,12 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Checkout canceled</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Checkout canceled — Night Owl</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #003594 url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&q=60&w=2000') no-repeat center center fixed;
+      background-size: cover;
+      color: #FFFFFF;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(to bottom, transparent 25%, rgba(0,53,148,0.7) 50%, rgba(0,53,148,0.95) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 500px;
+    }
+    h1 {
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      color: #FFEB43;
+    }
+    p { color: #ddd; font-size: 1.1rem; margin-bottom: 2rem; }
+    .btn {
+      display: inline-block;
+      padding: 1rem 2rem;
+      background: #FFEB43;
+      color: #003594;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+    }
+    .btn:hover { background: #fff; }
+  </style>
 </head>
 <body>
-  <section>
+  <div class="overlay"></div>
+  <div class="container">
+    <h1>Checkout Canceled</h1>
     <p>Picked the wrong subscription? Shop around then come back to pay!</p>
-  </section>
+    <a href="/" class="btn">Browse Profiles</a>
+  </div>
 </body>
 </html>
