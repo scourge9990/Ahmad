@@ -16,6 +16,10 @@ const stripe = process.env.STRIPE_SECRET_KEY
   ? require('stripe')(process.env.STRIPE_SECRET_KEY)
   : null;
 
+// Stripe configuration
+const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || 'price_1TDupAFRLGwNpssTKxUCvsZf';
+const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || '';
+
 const DATA_DIR = path.join(__dirname, 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -616,6 +620,14 @@ app.post('/api/reset-password', csrfProtection, async (req, res) => {
   );
 });
 
+// Get Stripe publishable key for frontend
+app.get('/api/stripe-config', (req, res) => {
+  res.json({ 
+    publishableKey: STRIPE_PUBLISHABLE_KEY,
+    hasStripe: !!stripe
+  });
+});
+
 app.get('/api/me', requireAuth, (req, res) => {
   db.get(
     `SELECT u.id, u.username, u.email, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.created_at,
@@ -715,11 +727,11 @@ app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, re
   }
   try {
     console.log('[Stripe] Creating checkout session for user:', req.session.userId);
-    console.log('[Stripe] Price ID:', 'price_1TDupAFRLGwNpssTKxUCvsZf');
+    console.log('[Stripe] Price ID:', STRIPE_PRICE_ID);
     
     const checkoutSession = await stripe.checkout.sessions.create({
       billing_address_collection: 'auto',
-      line_items: [{ price: 'price_1TDupAFRLGwNpssTKxUCvsZf', quantity: 1 }],
+      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
       mode: 'subscription',
       client_reference_id: String(req.session.userId),
       success_url: `${APP_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
