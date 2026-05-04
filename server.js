@@ -162,6 +162,7 @@ const upload = multer({
 
 // Photo upload endpoint
 app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
+  console.log('Upload request, session:', req.session?.userId, 'file:', req.file?.filename);
   if (!req.session || !req.session.userId) {
     return res.status(401).json({ error: 'Please log in' });
   }
@@ -173,6 +174,10 @@ app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
   
   // Get current photos
   db.get('SELECT photos FROM profiles WHERE user_id = ?', [req.session.userId], (err, row) => {
+    if (err) {
+      console.log('DB error:', err.message);
+      return res.status(500).json({ error: 'Database error' });
+    }
     let photos = [];
     if (row && row.photos) {
       try { photos = JSON.parse(row.photos); } catch (_) {}
@@ -181,8 +186,14 @@ app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
     if (photos.length >= 4) photos.shift();
     photos.push({ url: photoUrl, x: positionX, y: positionY });
     
-    db.run('UPDATE profiles SET photos = ? WHERE user_id = ?', [JSON.stringify(photos), req.session.userId]);
-    res.json({ url: photoUrl, photos });
+    db.run('UPDATE profiles SET photos = ? WHERE user_id = ?', [JSON.stringify(photos), req.session.userId], (err) => {
+      if (err) {
+        console.log('Update error:', err.message);
+        return res.status(500).json({ error: 'Save failed' });
+      }
+      console.log('Photo saved:', photoUrl);
+      res.json({ url: photoUrl, photos });
+    });
   });
 });
 
