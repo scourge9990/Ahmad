@@ -162,9 +162,8 @@ const upload = multer({
 
 // Photo upload endpoint
 app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
-  console.log('Upload hit, session:', req.session);
   if (!req.session || !req.session.userId) {
-    return res.status(401).json({ error: 'Please log in', hasSession: !!req.session, hasUserId: !!(req.session && req.session.userId) });
+    return res.status(401).json({ error: 'Please log in' });
   }
   if (!req.file) return res.status(400).json({ error: 'Invalid file type. Use jpg, png, or webp.' });
   
