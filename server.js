@@ -12,9 +12,12 @@ const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const path = require('path');
 const fs = require('fs');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
 
-fs.mkdirSync('/app/data', { recursive: true });
+const DATA_DIR = path.join(__dirname, 'data');
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const app = express();
 app.set('trust proxy', 1);
@@ -117,7 +120,7 @@ app.use(cookieParser());
 app.use(express.static('public'));
 
 app.use(session({
-  store: new SQLiteStore({ db: 'sessions.sqlite', dir: '/app/data' }),
+  store: new SQLiteStore({ db: 'sessions.sqlite', dir: DATA_DIR }),
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -177,7 +180,7 @@ app.get('/test-email', async (req, res) => {
   }
 });
 
-const db = new sqlite3.Database('/app/data/database.sqlite', (err) => {
+const db = new sqlite3.Database(path.join(DATA_DIR, 'database.sqlite'), (err) => {
   if (err) {
     console.error('Failed to open database:', err.message);
     process.exit(1);
@@ -320,6 +323,17 @@ app.post('/api/register', csrfProtection, [
           console.error('DB Error:', err);
           return res.status(500).json({ error: 'Database error' });
         }
+        
+        const userId = this.lastID;
+        
+        // Create user profile
+        db.run(
+          `INSERT INTO profiles (user_id) VALUES (?)`,
+          [userId],
+          (err) => {
+            if (err) console.error('Profile creation error:', err);
+          }
+        );
         
         const verifyUrl = `${APP_URL}/api/verify-email?token=${verificationToken}`;
         await sendEmail(
@@ -604,18 +618,23 @@ app.post('/api/reset-password', csrfProtection, async (req, res) => {
 
 app.get('/api/me', requireAuth, (req, res) => {
   db.get(
-    `SELECT id, username, email, age, location, bio, is_premium, created_at FROM users WHERE id = ?`,
+    `SELECT u.id, u.username, u.email, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.created_at,
+            p.interests, p.looking_for, p.photos
+     FROM users u
+     LEFT JOIN profiles p ON u.id = p.user_id
+     WHERE u.id = ?`,
     [req.session.userId],
     (err, user) => {
       if (err) return res.status(500).json({ error: 'Database error' });
       if (!user) return res.status(404).json({ error: 'User not found' });
+      user.photos = user.photos ? JSON.parse(user.photos) : [];
       res.json(user);
     }
   );
 });
 
 app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
-  const { bio, location, shift_schedule } = req.body;
+  const { bio, location, shift_schedule, interests, looking_for } = req.body;
   db.run(
     `UPDATE users SET bio = COALESCE(?, bio), location = COALESCE(?, location), shift_schedule = COALESCE(?, shift_schedule) WHERE id = ?`,
     [bio ? sanitizeInput(bio) : null, location ? sanitizeInput(location) : null, shift_schedule ? sanitizeInput(shift_schedule) : null, req.session.userId],
@@ -624,6 +643,18 @@ app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
         console.error('DB Error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
+      
+      // Also update profile
+      if (interests !== undefined || looking_for !== undefined) {
+        db.run(
+          `UPDATE profiles SET interests = COALESCE(?, interests), looking_for = COALESCE(?, looking_for) WHERE user_id = ?`,
+          [interests ? sanitizeInput(interests) : null, looking_for ? sanitizeInput(looking_for) : null, req.session.userId],
+          (err) => {
+            if (err) console.error('Profile update error:', err);
+          }
+        );
+      }
+      
       res.json({ success: true });
     }
   );
@@ -679,7 +710,13 @@ app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
 });
 
 app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Premium checkout is not configured. Please contact support.' });
+  }
   try {
+    console.log('[Stripe] Creating checkout session for user:', req.session.userId);
+    console.log('[Stripe] Price ID:', 'price_1TDupAFRLGwNpssTKxUCvsZf');
+    
     const checkoutSession = await stripe.checkout.sessions.create({
       billing_address_collection: 'auto',
       line_items: [{ price: 'price_1TDupAFRLGwNpssTKxUCvsZf', quantity: 1 }],
@@ -689,14 +726,20 @@ app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, re
       cancel_url: `${APP_URL}/cancel.html`,
     });
     
+    console.log('[Stripe] Checkout session created:', checkoutSession.id);
     res.json({ url: checkoutSession.url });
   } catch (err) {
-    console.error('Stripe error:', err);
-    res.status(500).json({ error: 'Failed to create checkout session.' });
+    console.error('[Stripe] Checkout error:', err.message);
+    console.error('[Stripe] Code:', err.code);
+    res.status(500).json({ error: err.message || 'Failed to create checkout session.' });
   }
 });
 
 app.post('/webhook/stripe', (req, res) => {
+  if (!stripe) {
+    console.error('Stripe not configured — webhook disabled.');
+    return res.status(503).send('Stripe not configured.');
+  }
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   
@@ -746,6 +789,13 @@ app.post('/webhook/stripe', (req, res) => {
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/forgot-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));
+app.get('/success', (req, res) => res.sendFile(path.join(__dirname, 'public', 'success.html')));
+app.get('/cancel', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cancel.html')));
 
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {

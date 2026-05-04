@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings — Central Alberta After Dark</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #0d0d0d;
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; color: #fff; }
+    .subtitle { color: #888; margin-bottom: 2rem; }
+    
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2e2e2e;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+    
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.5rem; color: #aaa; font-size: 0.9rem; }
+    input, textarea, select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #111;
+      color: #fff;
+      font-size: 1rem;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background: #c0392b;
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #333;
+      color: #fff;
+      margin-right: 0.5rem;
+    }
+    
+    .msg {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .msg.success { background: #1a3d1a; color: #4caf50; display: block; }
+    .msg.error { background: #3d1a1a; color: #f44336; display: block; }
+    
+    .logout-link {
+      color: #888;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .logout-link:hover { color: #fff; }
+    
+    .premium-badge {
+      display: inline-block;
+      background: #c0392b;
+      color: #fff;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="logout-link">← Back to profiles</a>
+    
+    <h1>Your Settings</h1>
+    <p class="subtitle">Manage your profile and preferences</p>
+    
+    <div id="toast" class="msg"></div>
+    
+    <div class="card">
+      <h2>Profile Info</h2>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" readonly />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" readonly />
+      </div>
+      <div class="form-group">
+        <label>Age</label>
+        <input type="number" id="age" min="18" max="120" />
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="location" placeholder="e.g., Edmonton, Alberta" />
+      </div>
+      <div class="form-group">
+        <label>Bio</label>
+        <textarea id="bio" placeholder="Tell others about yourself..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Shift Schedule</label>
+        <input type="text" id="shift_schedule" placeholder="e.g., Nights, 10pm-6am" />
+      </div>
+      <div class="form-group">
+        <label>Interests</label>
+        <input type="text" id="interests" placeholder="e.g., Gaming, Hiking, Music" />
+      </div>
+      <div class="form-group">
+        <label>Looking For</label>
+        <select id="looking_for">
+          <option value="">Select...</option>
+          <option value="friends">Friends</option>
+          <option value="dating">Dating</option>
+          <option value="casual">Casual</option>
+          <option value="serious">Serious Relationship</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+    </div>
+    
+    <div class="card">
+      <h2>Premium <span id="premium-badge" class="premium-badge" style="display:none;">★ PREMIUM</span></h2>
+      <p style="color:#888;margin-bottom:1rem;">Unlock unlimited likes, super likes, and see who's online now!</p>
+      <button class="btn btn-secondary" onclick="upgradePremium()" id="upgrade-btn">Upgrade to Premium</button>
+    </div>
+    
+    <div class="card">
+      <h2>Account</h2>
+      <button class="btn btn-secondary" onclick="logout()">Log Out</button>
+    </div>
+  </div>
+  
+  <script>
+    let currentUser = null;
+    let csrfToken = null;
+    
+    async function getCsrfToken() {
+      try {
+        const res = await fetch('/api/csrf-token');
+        const data = await res.json();
+        return data.csrfToken;
+      } catch (e) {
+        console.error('CSRF error:', e);
+        return null;
+      }
+    }
+    
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/me');
+        if (!res.ok) {
+          window.location.href = '/';
+          return;
+        }
+        currentUser = await res.json();
+        renderUser();
+      } catch (e) {
+        window.location.href = '/';
+      }
+    }
+    
+    function renderUser() {
+      document.getElementById('username').value = currentUser.username || '';
+      document.getElementById('email').value = currentUser.email || '';
+      document.getElementById('age').value = currentUser.age || '';
+      document.getElementById('location').value = currentUser.location || '';
+      document.getElementById('bio').value = currentUser.bio || '';
+      document.getElementById('shift_schedule').value = currentUser.shift_schedule || '';
+      document.getElementById('interests').value = currentUser.interests || '';
+      document.getElementById('looking_for').value = currentUser.looking_for || '';
+      
+      if (currentUser.is_premium) {
+        document.getElementById('premium-badge').style.display = 'inline-block';
+        document.getElementById('upgrade-btn').textContent = 'Already Premium';
+        document.getElementById('upgrade-btn').disabled = true;
+      }
+    }
+    
+    async function saveProfile() {
+      const csrf = await getCsrfToken();
+      const data = {
+        age: document.getElementById('age').value,
+        location: document.getElementById('location').value,
+        bio: document.getElementById('bio').value,
+        shift_schedule: document.getElementById('shift_schedule').value,
+        interests: document.getElementById('interests').value,
+        looking_for: document.getElementById('looking_for').value,
+      };
+      
+      try {
+        const res = await fetch('/api/me', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf,
+          },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+        const toast = document.getElementById('toast');
+        if (res.ok) {
+          toast.className = 'msg success';
+          toast.textContent = '✓ Profile saved!';
+        } else {
+          toast.className = 'msg error';
+          toast.textContent = '✗ ' + (result.error || 'Error saving profile');
+        }
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      } catch (e) {
+        const toast = document.getElementById('toast');
+        toast.className = 'msg error';
+        toast.textContent = '✗ Network error';
+        toast.style.display = 'block';
+      }
+    }
+    
+    async function upgradePremium() {
+      if (!currentUser) {
+        window.location.href = '/';
+        return;
+      }
+      try {
+        const csrf = await getCsrfToken();
+        const res = await fetch('/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf,
+          },
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert('Error: ' + (data.error || 'Could not start checkout'));
+        }
+      } catch (e) {
+        alert('Error starting checkout');
+      }
+    }
+    
+    function logout() {
+      fetch('/api/logout', { method: 'POST' })
+        .finally(() => {
+          window.location.href = '/';
+        });
+    }
+    
+    checkSession();
+  </script>
+</body>
+</html>
