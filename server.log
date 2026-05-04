@@ -1,0 +1,10 @@
+[Email] Transporter config: {
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  user: '(not set)',
+  passSet: false
+}
+Database tables initialized.
+Server listening on port 8080
+Connected to SQLite database.

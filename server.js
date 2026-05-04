@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const session = require('express-session');
@@ -121,6 +122,52 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
+// Serve uploads folder
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
+
+// Multer config for photo uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.random().toString(36).slice(2) + path.extname(file.originalname))
+});
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|webp/i;
+    const ext = path.extname(file.originalname).slice(1);
+    cb(null, allowed.test(ext) && allowed.test(file.mimetype));
+  }
+});
+
+// Photo upload endpoint - inline auth check
+app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({ error: 'Please log in' });
+  }
+  if (!req.file) return res.status(400).json({ error: 'Invalid file type. Use jpg, png, or webp.' });
+  
+  const photoUrl = '/uploads/' + req.file.filename;
+  
+  // Get current photos
+  db.get('SELECT photos FROM profiles WHERE user_id = ?', [req.session.userId], (err, row) => {
+    let photos = [];
+    if (row && row.photos) {
+      try { photos = JSON.parse(row.photos); } catch (_) {}
+    }
+    // Add new photo (max 4 photos)
+    if (photos.length >= 4) photos.shift();
+    photos.push(photoUrl);
+    
+    db.run('UPDATE profiles SET photos = ? WHERE user_id = ?', [JSON.stringify(photos), req.session.userId]);
+    res.json({ url: photoUrl, photos });
+  });
+});
+
 app.use(express.static('public'));
 
 app.use(session({
@@ -645,11 +692,17 @@ app.get('/api/me', requireAuth, (req, res) => {
   );
 });
 
+// Update user profile (including age)
 app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
-  const { bio, location, shift_schedule, interests, looking_for } = req.body;
+  const { age, bio, location, shift_schedule, interests, looking_for } = req.body;
   db.run(
-    `UPDATE users SET bio = COALESCE(?, bio), location = COALESCE(?, location), shift_schedule = COALESCE(?, shift_schedule) WHERE id = ?`,
-    [bio ? sanitizeInput(bio) : null, location ? sanitizeInput(location) : null, shift_schedule ? sanitizeInput(shift_schedule) : null, req.session.userId],
+    `UPDATE users SET 
+       age = CASE WHEN ? IS NOT NULL THEN ? ELSE age END,
+       bio = COALESCE(?, bio), 
+       location = COALESCE(?, location), 
+       shift_schedule = COALESCE(?, shift_schedule) 
+     WHERE id = ?`,
+    [age, age ? parseInt(age) : null, bio ? sanitizeInput(bio) : null, location ? sanitizeInput(location) : null, shift_schedule ? sanitizeInput(shift_schedule) : null, req.session.userId],
     function(err) {
       if (err) {
         console.error('DB Error:', err);
