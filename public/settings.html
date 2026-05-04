@@ -157,9 +157,24 @@
       <div id="photos-container" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;"></div>
       <label class="btn btn-secondary" style="display:inline-block;cursor:pointer;">
         📷 Add Photo
-        <input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="uploadPhoto(this)" />
+        <input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="handlePhotoSelect(this)" />
       </label>
-      <p style="color:#666;font-size:0.8rem;margin-top:0.5rem;">JPG, PNG, or WebP. Max 5MB per photo.</p>
+      <p style="color:#666;font-size:0.8rem;margin-top:0.5rem;">JPG, PNG, or WebP. Max 5MB. Drag photo to adjust.</p>
+    </div>
+    
+    <!-- Photo Preview Modal -->
+    <div id="photo-preview-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:1000;align-items:center;justify-content:center;">
+      <div style="background:linear-gradient(135deg,rgba(0,53,148,0.95),rgba(13,54,146,0.95));border:2px solid #FFEB43;border-radius:12px;padding:1.5rem;max-width:90%;max-height:90%;text-align:center;">
+        <h2 style="color:#FFEB43;font-family:'Impact',sans-serif;margin-bottom:1rem;">Position Your Photo</h2>
+        <div id="photo-preview-frame" style="width:250px;height:250px;margin:0 auto 1rem;overflow:hidden;border:2px solid #FFEB43;border-radius:8px;cursor:move;position:relative;background:#000;">
+          <img id="photo-preview-img" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;" />
+        </div>
+        <p style="color:#ddd;font-size:0.85rem;margin-bottom:1rem;">Drag to position your photo</p>
+        <div>
+          <button class="btn btn-primary" onclick="confirmPhotoUpload()">✓ Use Photo</button>
+          <button class="btn btn-secondary" onclick="cancelPhotoUpload()">✕ Cancel</button>
+        </div>
+      </div>
     </div>
     
     <div class="card">
@@ -276,6 +291,140 @@
       ).join('');
     }
     
+    // Photo preview state
+    let pendingPhotoFile = null;
+    let photoPosition = { x: 0, y: 0 };
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    
+    function handlePhotoSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+      
+      // Check file type
+      if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+        showToast('Use JPG, PNG, or WebP', 'error');
+        input.value = '';
+        return;
+      }
+      
+      // Check file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Max 5MB file size', 'error');
+        input.value = '';
+        return;
+      }
+      
+      pendingPhotoFile = file;
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.getElementById('photo-preview-img');
+        img.src = e.target.result;
+        photoPosition = { x: 0, y: 0 };
+        img.style.transform = 'translate(0px, 0px)';
+        document.getElementById('photo-preview-modal').style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+      
+      input.value = '';
+    }
+    
+    function confirmPhotoUpload() {
+      document.getElementById('photo-preview-modal').style.display = 'none';
+      if (!pendingPhotoFile) return;
+      
+      const formData = new FormData();
+      formData.append('photo', pendingPhotoFile);
+      formData.append('positionX', photoPosition.x);
+      formData.append('positionY', photoPosition.y);
+      
+      fetch('/api/upload-photo', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': getCsrfTokenSync() },
+        body: formData
+      }).then(res => res.json()).then(data => {
+        if (data.photos) {
+          renderPhotos(data.photos);
+          currentUser.photos = data.photos;
+          showToast('📷 Photo added!', 'success');
+        } else {
+          showToast(data.error || 'Upload failed', 'error');
+        }
+      }).catch(() => showToast('Upload failed', 'error'));
+      
+      pendingPhotoFile = null;
+    }
+    
+    function cancelPhotoUpload() {
+      document.getElementById('photo-preview-modal').style.display = 'none';
+      pendingPhotoFile = null;
+    }
+    
+    // Get CSRF token synchronously
+    function getCsrfTokenSync() {
+      return document.cookie.split('csrfToken=')[1]?.split(';')[0] || '';
+    }
+    
+    // Drag handling
+    document.addEventListener('DOMContentLoaded', () => {
+      const frame = document.getElementById('photo-preview-frame');
+      const img = document.getElementById('photo-preview-img');
+      if (!frame || !img) return;
+      
+      frame.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        dragStart = { x: e.clientX - photoPosition.x, y: e.clientY - photoPosition.y };
+        frame.style.cursor = 'grabbing';
+      });
+      
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        photoPosition = { 
+          x: e.clientX - dragStart.x, 
+          y: e.clientY - dragStart.y 
+        };
+        // Limit drag range
+        photoPosition.x = Math.min(50, Math.max(-50, photoPosition.x));
+        photoPosition.y = Math.min(50, Math.max(-50, photoPosition.y));
+        img.style.transform = `translate(${photoPosition.x}px, ${photoPosition.y}px)`;
+      });
+      
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          frame.style.cursor = 'move';
+        }
+      });
+    });
+    
+    // Touch drag support
+    document.addEventListener('touchstart', (e) => {
+      const frame = document.getElementById('photo-preview-frame');
+      if (!frame || !frame.contains(e.target)) return;
+      isDragging = true;
+      const touch = e.touches[0];
+      dragStart = { x: touch.clientX - photoPosition.x, y: touch.clientY - photoPosition.y };
+    }, { passive: true });
+    
+    document.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      const touch = e.touches[0];
+      photoPosition = { 
+        x: touch.clientX - dragStart.x, 
+        y: touch.clientY - dragStart.y 
+      };
+      photoPosition.x = Math.min(50, Math.max(-50, photoPosition.x));
+      photoPosition.y = Math.min(50, Math.max(-50, photoPosition.y));
+      const img = document.getElementById('photo-preview-img');
+      img.style.transform = `translate(${photoPosition.x}px, ${photoPosition.y}px)`;
+    }, { passive: true });
+    
+    document.addEventListener('touchend', () => { isDragging = false; });
+    
+    // Keep uploadPhoto for backward compatibility
     async function uploadPhoto(input) {
       const file = input.files[0];
       if (!file) return;
