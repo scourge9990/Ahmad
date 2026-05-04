@@ -259,6 +259,7 @@ db.serialize(() => {
     reset_token_expires INTEGER,
     failed_login_attempts INTEGER DEFAULT 0,
     locked_until INTEGER,
+    last_active DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
@@ -268,6 +269,7 @@ db.serialize(() => {
     `ALTER TABLE users ADD COLUMN reset_token_expires INTEGER`,
     `ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0`,
     `ALTER TABLE users ADD COLUMN locked_until INTEGER`,
+    `ALTER TABLE users ADD COLUMN last_active DATETIME`,
   ];
 
   newColumns.forEach(sql => {
@@ -689,6 +691,36 @@ app.get('/api/me', requireAuth, (req, res) => {
       if (!user) return res.status(404).json({ error: 'User not found' });
       user.photos = user.photos ? JSON.parse(user.photos) : [];
       res.json(user);
+    }
+  );
+});
+
+// Get all verified profiles
+app.get('/api/profiles', requireAuth, (req, res) => {
+  // Update last_active for current user
+  db.run('UPDATE users SET last_active = CURRENT_TIMESTAMP WHERE id = ?', [req.session.userId]);
+  
+  db.all(
+    `SELECT u.id, u.username, u.age, u.location, u.bio, u.shift_schedule, u.is_premium, u.last_active, u.created_at,
+            p.interests, p.looking_for, p.photos
+     FROM users u
+     LEFT JOIN profiles p ON u.id = p.user_id
+     WHERE u.is_verified = 1 AND u.id != ?
+     ORDER BY u.created_at DESC`,
+    [req.session.userId],
+    (err, users) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      const now = Date.now();
+      users = users.map(u => {
+        const lastActive = u.last_active ? new Date(u.last_active).getTime() : 0;
+        const isOnline = now - lastActive < 5 * 60 * 1000; // 5 minutes
+        return {
+          ...u,
+          photos: u.photos ? JSON.parse(u.photos) : [],
+          online: isOnline
+        };
+      });
+      res.json(users);
     }
   );
 });

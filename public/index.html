@@ -1068,6 +1068,7 @@ centralalbertaafterdarkads@gmail.com')">
             <img class="thumbnail" src="${p.photos?.[0] || 'https://api.dicebear.com/7.x/thumbs/svg?seed=' + encodeURIComponent(p.username)}" alt="${p.username}" />
             <div class="info">
               <div class="name-age">${p.username}${p.age ? ', ' + p.age : ''}
+                ${p.online ? '<span style="display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-left:8px;vertical-align:middle;" title="Online"></span>' : '<span style="display:inline-block;width:8px;height:8px;background:#6b7280;border-radius:50%;margin-left:8px;vertical-align:middle;" title="Offline"></span>'}
                 ${p.match_score ? '<span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">' + p.match_score + '% match</span>' : ''}
               </div>
               ${p.location ? '<div class="location">📍 ' + p.location + '</div>' : ''}
