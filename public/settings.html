@@ -268,13 +268,14 @@
       try {
         const res = await fetch('/api/me');
         if (!res.ok) {
-          window.location.href = '/';
+          // Don't redirect - just show form without user data
+          console.log('Not logged in');
           return;
         }
         currentUser = await res.json();
         renderUser();
       } catch (e) {
-        window.location.href = '/';
+        console.log('Session check failed:', e);
       }
     }
     
