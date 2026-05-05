@@ -1,3 +1,3 @@
 #!/bin/sh
-export PORT=8080
+export PORT=3000
 exec node server.js
