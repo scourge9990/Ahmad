@@ -160,6 +160,14 @@ const upload = multer({
   }
 });
 
+const requireAuth = (req, res, next) => {
+  if (req.session?.userId) {
+    next();
+  } else {
+    return res.status(401).json({ error: 'Unauthorized - please log in.' });
+  }
+};
+
 // Photo upload endpoint
 app.post('/api/upload-photo', requireAuth, upload.single('photo'), (req, res) => {
   console.log('Upload for user:', req.session?.userId, 'file:', req.file?.filename);
@@ -349,14 +357,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-const requireAuth = (req, res, next) => {
-  if (req.session?.userId) {
-    next();
-  } else {
-    return res.status(401).json({ error: 'Unauthorized - please log in.' });
-  }
-};
 
 app.post('/api/register', csrfProtection, [
   body('email').isEmail().normalizeEmail().withMessage('Valid email required'),

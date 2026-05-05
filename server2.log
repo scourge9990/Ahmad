@@ -6,5 +6,5 @@
   passSet: false
 }
 Database tables initialized.
-Server listening on port 12000
+Server listening on port 12001
 Connected to SQLite database.
