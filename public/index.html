@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
   <title>Central Alberta After Dark</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#FFEB43" />
   
   
   <style>
@@ -750,6 +755,9 @@ prime time 🌙✨</p>
 Verification & Payment Options')">
       🔒 Verify & Subscribe
     </div>
+<button class="auth-btn mobile-download-btn" onclick="if (window.matchMedia('(display-mode: standalone)').matches) { alert('App already installed!'); } else { alert('To install: Tap the menu and select Add to Home Screen'); }">
+      📱 Download
+    </button>
    
     <div class="moon-star">🌙</div>
   </header>
