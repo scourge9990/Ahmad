@@ -122,7 +122,7 @@ app.use('/api/login', loginLimiter);
 app.use('/api/register', registerLimiter);
 app.use('/api/', apiLimiter);
 
-app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
+app.use('/api/webhook/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 const cookieParser = require('cookie-parser');
@@ -972,7 +972,7 @@ app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, re
   }
 });
 
-app.post('/webhook/stripe', (req, res) => {
+app.post('/api/webhook/stripe', (req, res) => {
   console.log('[Webhook] Received stripe webhook');
   if (!stripe) {
     console.error('Stripe not configured — webhook disabled.');
