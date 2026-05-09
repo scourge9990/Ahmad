@@ -114,7 +114,9 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests from this IP.' },
 });
 
-app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
+
+// Webhook BEFORE rate limiting and body parsing
+app.use('/api/webhook/stripe', express.raw({ type: 'application/json' }));
 
 app.use('/api/login', loginLimiter);
 app.use('/api/register', registerLimiter);
