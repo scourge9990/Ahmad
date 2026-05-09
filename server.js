@@ -26,6 +26,11 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const app = express();
 app.set('trust proxy', 1);
+
+app.get('/test-route-xyz123', (req, res) => {
+  res.send('TEST ROUTE WORKING XYZ123');
+});
+
 const PORT = process.env.PORT || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
