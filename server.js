@@ -979,7 +979,7 @@ app.post('/webhook/stripe', (req, res) => {
   
   if (!webhookSecret) {
     console.error('STRIPE_WEBHOOK_SECRET not set — webhook disabled.');
-    return res.status(500).send('Webhook secret not configured.');
+    return res.status(200).send("Add STRIPE_WEBHOOK_SECRET");
   }
   
   let event;
