@@ -968,7 +968,7 @@ app.post('/create-checkout-session', requireAuth, csrfProtection, async (req, re
   }
 });
 
-app.post('/webhook/stripe', (req, res) => {
+app.get('/webhook/stripe', (req, res) => res.send('Stripe webhook endpoint active')); app.post('/webhook/stripe', (req, res) => {
   console.log('[Webhook] Received stripe webhook');
   if (!stripe) {
     console.error('Stripe not configured — webhook disabled.');
