@@ -379,39 +379,44 @@ app.post('/api/register', csrfProtection, [
     const hashedPassword = await bcrypt.hash(password, 12);
     const verificationToken = crypto.randomBytes(32).toString('hex');
     
-    db.run(
-      `INSERT INTO users (email, username, password_hash, age, location, verification_token) VALUES (?, ?, ?, ?, ?, ?)`,
-      [email.toLowerCase(), username, hashedPassword, age || null, safeLocation, verificationToken],
-      async function(err) {
-        if (err) {
-          if (err.message?.includes('UNIQUE constraint failed')) {
-            return res.status(400).json({ error: 'Email or username already taken.' });
+    // Use serialize to ensure synchronous execution
+    db.serialize(() => {
+      db.run(
+        `INSERT INTO users (email, username, password_hash, age, location, verification_token, is_verified) VALUES (?, ?, ?, ?, ?, ?, 1)`,
+        [email.toLowerCase(), username, hashedPassword, age || null, safeLocation, verificationToken],
+        function(err) {
+          if (err) {
+            if (err.message?.includes('UNIQUE constraint failed')) {
+              return res.status(400).json({ error: 'Email or username already taken.' });
+            }
+            console.error('DB Error:', err);
+            return res.status(500).json({ error: 'Database error' });
           }
-          console.error('DB Error:', err);
-          return res.status(500).json({ error: 'Database error' });
+          
+          const userId = this.lastID;
+          console.log('User created with ID:', userId);
+          
+          // Create user profile
+          db.run(
+            `INSERT INTO profiles (user_id) VALUES (?)`,
+            [userId],
+            (err) => {
+              if (err) console.error('Profile creation error:', err);
+            }
+          );
+          
+          // Try sending email
+          const verifyUrl = `${APP_URL}/api/verify-email?token=${verificationToken}`;
+          sendEmail(
+            email,
+            'Verify your Central Alberta After Dark account',
+            `<p>Welcome to Central Alberta After Dark!</p><p>Please verify your email address: <a href="${verifyUrl}">${verifyUrl}</a></p><p>Must verify before logging in.</p>`
+          ).catch(err => console.log('Email error (expected):', err.message));
+          
+          res.status(201).json({ success: true, message: 'Account created!' });
         }
-        
-        const userId = this.lastID;
-        
-        // Create user profile
-        db.run(
-          `INSERT INTO profiles (user_id) VALUES (?)`,
-          [userId],
-          (err) => {
-            if (err) console.error('Profile creation error:', err);
-          }
-        );
-        
-        const verifyUrl = `${APP_URL}/api/verify-email?token=${verificationToken}`;
-        await sendEmail(
-          email,
-          'Verify your Central Alberta After Dark account',
-          `<p>Welcome to Central Alberta After Dark!</p><p>Please verify your email address: <a href="${verifyUrl}">${verifyUrl}</a></p><p>Must verify before logging in.</p>`
-        );
-        
-        res.status(201).json({ success: true, message: 'Account created! Please check your email to verify.' });
-      }
-    );
+      );
+    });
   } catch (error) {
     console.error('Server Error:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -68,6 +68,7 @@ transparent 75%);
       display: flex;
       flex-direction: column;
       align-items: center;
+      text-align: center;
       gap: 0.2rem;
       flex: 1;
       max-width: 600px;
@@ -585,8 +586,10 @@ z-index: 2; }
         max-width: 100%;
       }
       /* Mobile fixes */
-      header h1 { font-size: 2rem !important; }
-      .title-group h1 { font-size: 2rem !important; }
+      header { justify-content: center; text-align: center; }
+      header .title-group { align-items: center; text-align: center; }
+      header h1 { font-size: 2rem !important; text-align: center; }
+      .title-group h1 { font-size: 2rem !important; text-align: center; }
       .title-group h2 { font-size: 1rem; }
       .moon-star { font-size: 1.2rem; top: 5px; right: 5px; }
       .auth-btn { padding: 0.5rem 1rem; font-size: 0.9rem; }
@@ -594,6 +597,14 @@ z-index: 2; }
       .profile-card h3 { font-size: 1.1rem; }
       .profile-card .location { font-size: 0.8rem; }
       .profile-card .bio { font-size: 0.85rem; }
+      /* Center nav and main content */
+      .nav-auth { justify-content: center; gap: 0.5rem; }
+      .filters { flex-wrap: wrap; justify-content: center; }
+      .filters button { font-size: 0.8rem; padding: 0.4rem 0.6rem; }
+      main { padding: 1rem 0.5rem; }
+      .profile-grid { justify-content: center; }
+      .chat-input-area { text-align: center; }
+      .chat-input-area input { text-align: center; }
     }
     /* ── Resend verification section ── */
     .resend-section {
@@ -749,11 +760,7 @@ prime time 🌙✨</p>
       <button class="auth-btn" id="header-signup-btn" onclick="openModal('signup-modal')">Sign Up</button>
       <a href="/settings.html" class="auth-btn" id="header-settings-btn" style="display:none;">My Profile</a>
       <button class="auth-btn" id="header-logout-btn" onclick="handleLogout()" style="display:none;">Log Out</button>
-    </div>
-   
-    <div class="payment-block" id="payment-btn" onclick="alert('Dashboard: ID 
-Verification & Payment Options')">
-      🔒 Verify & Subscribe
+      <span class="auth-btn" id="payment-btn" onclick="alert('Dashboard: ID Verification & Payment Options')" style="display:none;">🔒 Verify & Subscribe</span>
     </div>
 <button class="auth-btn mobile-download-btn" onclick="if (window.matchMedia('(display-mode: standalone)').matches) { alert('App already installed!'); } else { alert('To install: Tap the menu and select Add to Home Screen'); }">
       📱 Download
@@ -905,6 +912,7 @@ centralalbertaafterdarkads@gmail.com')">
       document.getElementById('header-signup-btn').style.display = username ? 'none' : '';
       document.getElementById('header-settings-btn').style.display = username ? '' : 'none';
       document.getElementById('header-logout-btn').style.display = username ? '' : 'none';
+      document.getElementById('payment-btn').style.display = username ? '' : 'none';
     }
 
     async function checkSession() {
