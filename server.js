@@ -329,6 +329,17 @@ db.serialize(() => {
     FOREIGN KEY(user2_id) REFERENCES users(id) ON DELETE CASCADE
   )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL,
+    receiver_id INTEGER NOT NULL,
+    message TEXT NOT NULL,
+    is_read INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(receiver_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
   db.run(`CREATE TABLE IF NOT EXISTS webhook_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     stripe_event_id TEXT UNIQUE NOT NULL,
@@ -1027,6 +1038,108 @@ app.get('/api/webhook/stripe', (req, res) => res.send('Stripe webhook endpoint a
       res.json({ received: true });
     }
   );
+});
+
+// Get user's matches
+app.get('/api/matches', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  
+  db.all(`
+    SELECT m.id, m.created_at,
+      CASE WHEN m.user1_id = ? THEN m.user2_id ELSE m.user1_id END as user_id,
+      u.username, u.location, u.last_active
+    FROM matches m
+    JOIN users u ON u.id = CASE WHEN m.user1_id = ? THEN m.user2_id ELSE m.user1_id END
+    WHERE m.user1_id = ? OR m.user2_id = ?
+    ORDER BY m.created_at DESC
+  `, [userId, userId, userId, userId], (err, rows) => {
+    if (err) {
+      console.error('Matches error:', err);
+      return res.status(500).json({ error: 'Failed to get matches' });
+    }
+    res.json({ matches: rows || [] });
+  });
+});
+
+// Chat: Send a message
+app.post('/api/messages', requireAuth, csrfProtection, (req, res) => {
+  const { receiver_id, message } = req.body;
+  const sender_id = req.session.userId;
+  
+  if (!receiver_id || !message) {
+    return res.status(400).json({ error: 'receiver_id and message required' });
+  }
+  if (message.length > 1000) {
+    return res.status(400).json({ error: 'Message too long (max 1000 chars)' });
+  }
+  
+  db.run(`INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)`,
+    [sender_id, receiver_id, message], function(err) {
+      if (err) {
+        console.error('Message send error:', err);
+        return res.status(500).json({ error: 'Failed to send message' });
+      }
+      res.json({ success: true, message: 'Message sent!', message_id: this.lastID });
+    });
+});
+
+// Chat: Get conversations (list of users you've messaged with)
+app.get('/api/conversations', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  
+  db.all(`
+    SELECT DISTINCT 
+      CASE WHEN m.sender_id = ? THEN m.receiver_id ELSE m.sender_id END as partner_id,
+      u.username, u.location, u.last_active,
+      (SELECT message FROM messages WHERE id IN (
+        SELECT id FROM messages WHERE 
+        (sender_id = ? AND receiver_id = partner_id) OR 
+        (sender_id = partner_id AND receiver_id = ?)
+      ) ORDER BY created_at DESC LIMIT 1) as last_message,
+      (SELECT created_at FROM messages WHERE id IN (
+        SELECT id FROM messages WHERE 
+        (sender_id = ? AND receiver_id = partner_id) OR 
+        (sender_id = partner_id AND receiver_id = ?)
+      ) ORDER BY created_at DESC LIMIT 1) as last_time,
+      (SELECT COUNT(*) FROM messages WHERE sender_id = partner_id AND receiver_id = ? AND is_read = 0) as unread
+    FROM messages m
+    JOIN users u ON u.id = CASE WHEN m.sender_id = ? THEN m.receiver_id ELSE m.sender_id END
+    WHERE m.sender_id = ? OR m.receiver_id = ?
+    ORDER BY last_time DESC
+  `, [userId, userId, userId, userId, userId, userId, userId, userId, userId], (err, rows) => {
+    if (err) {
+      console.error('Conversations error:', err);
+      return res.status(500).json({ error: 'Failed to get conversations' });
+    }
+    res.json({ conversations: rows || [] });
+  });
+});
+
+// Chat: Get messages with a specific user
+app.get('/api/messages/:partnerId', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const partnerId = parseInt(req.params.partnerId);
+  
+  if (!partnerId || isNaN(partnerId)) {
+    return res.status(400).json({ error: 'Invalid partner ID' });
+  }
+  
+  db.all(`
+    SELECT m.*, u.username as sender_username 
+    FROM messages m
+    JOIN users u ON u.id = m.sender_id
+    WHERE (m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?)
+    ORDER BY m.created_at ASC
+  `, [userId, partnerId, partnerId, userId], (err, rows) => {
+    if (err) {
+      console.error('Messages error:', err);
+      return res.status(500).json({ error: 'Failed to get messages' });
+    }
+    // Mark messages as read
+    db.run(`UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0`,
+      [partnerId, userId], () => {});
+    res.json({ messages: rows || [] });
+  });
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));

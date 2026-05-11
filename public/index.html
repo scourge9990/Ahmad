@@ -1171,8 +1171,66 @@ centralalbertaafterdarkads@gmail.com')">
       }
     }
 
-    function sendChat() {
-      showToast('💬 Chat coming soon for Night Owl Premium members!');
+    async function sendChat() {
+      if (!currentUser) {
+        showToast('💬 Please log in to chat!');
+        return;
+      }
+      const input = document.getElementById('chat-input');
+      const message = input.value.trim();
+      if (!message) return;
+      
+      // For now, broadcast to all matches - user can select recipient later
+      // Get matches and allow selecting one
+      try {
+        const res = await fetch('/api/matches');
+        if (!res.ok) throw new Error('Failed to get matches');
+        const data = await res.json();
+        const matches = data.matches || [];
+        
+        if (matches.length === 0) {
+          showToast('💬 Like someone to start chatting!');
+          return;
+        }
+        
+        // Show match selector or just sent to first match for MVP
+        const matchId = matches[0].user_id;
+        
+        const csrfRes = await fetch('/api/csrf-token');
+        const { csrfToken } = await csrfRes.json();
+        
+        const sendRes = await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken 
+          },
+          body: JSON.stringify({ receiver_id: matchId, message })
+        });
+        
+        if (sendRes.ok) {
+          input.value = '';
+          showToast('💬 Message sent!');
+          loadConversations();
+        } else {
+          const err = await sendRes.json();
+          showToast('💬 ' + (err.error || 'Failed to send'));
+        }
+      } catch(e) {
+        showToast('💬 Error: ' + e.message);
+      }
+    }
+    
+    async function loadConversations() {
+      if (!currentUser) return;
+      try {
+        const res = await fetch('/api/conversations');
+        if (res.ok) {
+          const data = await res.json();
+          // Could display conversations list here
+          console.log('Conversations:', data.conversations);
+        }
+      } catch(e) {}
     }
 
     // ── Premium checkout ───────────────────────────────────────────────────
