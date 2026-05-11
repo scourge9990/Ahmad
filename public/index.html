@@ -1020,9 +1020,36 @@ centralalbertaafterdarkads@gmail.com')">
       // Always render demo profiles first so visitors see content immediately.
       renderProfiles();
 
-      // If a real user is logged in, also try to load real profiles from the API
-      // and append them after the demo profiles.
-      if (!currentUser) return;
+      // Fetch current user's full profile data first
+      let myData = null;
+      if (currentUser) {
+        try {
+          const meRes = await fetch('/api/me');
+          if (meRes.ok) myData = await meRes.json();
+        } catch (_) {}
+      }
+      if (myData) {
+        const container = document.getElementById('profiles-container');
+        const myPhoto = myData.photos?.[0] || 'https://api.dicebear.com/7.x/thumbs/svg?seed=' + encodeURIComponent(currentUser);
+        container.insertAdjacentHTML('beforeend', `
+          <div class="profile-row" style="border:2px solid #FFEB43;">
+            <img class="thumbnail" src="${myPhoto}" alt="${currentUser}" />
+            <div class="info">
+              <div class="name-age">${currentUser}${myData.age ? ', ' + myData.age : ''}
+                <span style="display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-left:8px;vertical-align:middle;" title="You"></span>
+                <span style="background:#FFEB43;color:#003594;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin-left:8px;font-weight:bold;">YOU</span>
+              </div>
+              ${myData.location ? '<div class="location">📍 ' + myData.location + '</div>' : ''}
+              ${myData.bio ? '<div class="bio-teaser">' + myData.bio.slice(0, 120) + '</div>' : ''}
+            </div>
+            <div class="buttons">
+              <button class="like-btn" onclick="location.href='/settings.html'">👤 My Profile</button>
+            </div>
+          </div>
+        `);
+      }
+
+      // Then load other profiles from API
       try {
         const res = await fetch('/api/profiles');
         console.log('[Profiles] status:', res.status, 'ok:', res.ok);
