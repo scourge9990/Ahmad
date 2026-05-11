@@ -1178,59 +1178,54 @@ centralalbertaafterdarkads@gmail.com')">
       }
       const input = document.getElementById('chat-input');
       const message = input.value.trim();
-      if (!message) return;
+      if (!message || message.length < 2) {
+        showToast('💬 Say something!');
+        return;
+      }
       
-      // For now, broadcast to all matches - user can select recipient later
-      // Get matches and allow selecting one
       try {
-        const res = await fetch('/api/matches');
-        if (!res.ok) throw new Error('Failed to get matches');
-        const data = await res.json();
-        const matches = data.matches || [];
-        
-        if (matches.length === 0) {
-          showToast('💬 Like someone to start chatting!');
-          return;
-        }
-        
-        // Show match selector or just sent to first match for MVP
-        const matchId = matches[0].user_id;
-        
         const csrfRes = await fetch('/api/csrf-token');
         const { csrfToken } = await csrfRes.json();
         
-        const sendRes = await fetch('/api/messages', {
+        const sendRes = await fetch('/api/ticker', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
             'X-CSRF-Token': csrfToken 
           },
-          body: JSON.stringify({ receiver_id: matchId, message })
+          body: JSON.stringify({ message })
         });
         
         if (sendRes.ok) {
           input.value = '';
-          showToast('💬 Message sent!');
-          loadConversations();
+          showToast('💬 Posted to Night Owls!');
+          loadTicker();
         } else {
           const err = await sendRes.json();
-          showToast('💬 ' + (err.error || 'Failed to send'));
+          showToast('💬 ' + (err.error || 'Failed to post'));
         }
       } catch(e) {
         showToast('💬 Error: ' + e.message);
       }
     }
     
-    async function loadConversations() {
-      if (!currentUser) return;
+    // Load and display ticker
+    async function loadTicker() {
       try {
-        const res = await fetch('/api/conversations');
+        const res = await fetch('/api/ticker');
         if (res.ok) {
           const data = await res.json();
-          // Could display conversations list here
-          console.log('Conversations:', data.conversations);
+          displayTicker(data.ticker || []);
         }
       } catch(e) {}
+    }
+    
+    function displayTicker(messages) {
+      const container = document.getElementById('ticker-container');
+      if (!container) return;
+      container.innerHTML = messages.map(m => 
+        `<span class="ticker-msg">💬 ${m.username}: ${escapeHtml(m.message)}</span>`
+      ).join(' <span class="ticker-sep">•</span> ');
     }
 
     // ── Premium checkout ───────────────────────────────────────────────────

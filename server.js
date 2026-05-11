@@ -340,6 +340,15 @@ db.serialize(() => {
     FOREIGN KEY(receiver_id) REFERENCES users(id) ON DELETE CASCADE
   )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS public_ticker (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    username TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
   db.run(`CREATE TABLE IF NOT EXISTS webhook_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     stripe_event_id TEXT UNIQUE NOT NULL,
@@ -1059,6 +1068,40 @@ app.get('/api/matches', requireAuth, (req, res) => {
     }
     res.json({ matches: rows || [] });
   });
+});
+
+// Public ticker: Get recent messages (no auth required)
+app.get('/api/ticker', (req, res) => {
+  db.all(`SELECT * FROM public_ticker ORDER BY created_at DESC LIMIT 20`, [], (err, rows) => {
+    if (err) {
+      console.error('Ticker error:', err);
+      return res.status(500).json({ error: 'Failed to get ticker' });
+    }
+    res.json({ ticker: rows || [] });
+  });
+});
+
+// Public ticker: Post a message (requires auth)
+app.post('/api/ticker', requireAuth, csrfProtection, (req, res) => {
+  const { message } = req.body;
+  const userId = req.session.userId;
+  const username = req.session.username;
+  
+  if (!message || message.trim().length < 2) {
+    return res.status(400).json({ error: 'Message too short' });
+  }
+  if (message.length > 200) {
+    return res.status(400).json({ error: 'Message too long (max 200 chars)' });
+  }
+  
+  db.run(`INSERT INTO public_ticker (user_id, username, message) VALUES (?, ?, ?)`,
+    [userId, username, message.trim()], function(err) {
+      if (err) {
+        console.error('Ticker post error:', err);
+        return res.status(500).json({ error: 'Failed to post' });
+      }
+      res.json({ success: true, id: this.lastID });
+    });
 });
 
 // Chat: Send a message
