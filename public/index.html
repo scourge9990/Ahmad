@@ -435,6 +435,9 @@ z-index: 2; }
         gap: 0.75rem;
         padding: 0.75rem 1rem;
         min-height: unset;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
       }
       .flag { width: 60px; }
       header h1 { font-size: 2rem; }
@@ -1075,8 +1078,13 @@ centralalbertaafterdarkads@gmail.com')">
       if (!currentUser) return;
       try {
         const res = await fetch('/api/profiles');
-        if (!res.ok) return;
+        console.log('[Profiles] status:', res.status, 'ok:', res.ok);
+        if (!res.ok) {
+          console.log('[Profiles] failed to load');
+          return;
+        }
         const profiles = await res.json();
+        console.log('[Profiles] loaded:', profiles.length);
         if (!profiles.length) return;
         const container = document.getElementById('profiles-container');
         const realHtml = profiles.map(p => `
