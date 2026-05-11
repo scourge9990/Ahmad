@@ -499,12 +499,15 @@
     }
     
     async function deletePhoto(index) {
-      // For now, just reload page - full delete would need another endpoint
-      showToast('Photo deleted', 'success');
-      const photos = currentUser.photos || [];
-      photos.splice(index, 1);
-      renderPhotos(photos);
-      currentUser.photos = photos;
+      try {
+        const res = await fetch('/api/photos/' + index, { method: 'DELETE', credentials: 'include' });
+        const data = await res.json();
+        renderPhotos(data.photos || []);
+        currentUser.photos = data.photos || [];
+        showToast('Photo deleted', 'success');
+      } catch (e) {
+        showToast('Delete failed', 'error');
+      }
     }
     
     function showToast(msg, type) {
