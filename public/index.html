@@ -811,6 +811,8 @@ centralalbertaafterdarkads@gmail.com')">
     </aside>
   </div>
 
+  <div id="ticker-feed" style="max-height:200px;overflow-y:auto;padding:10px;background:linear-gradient(180deg,#1a1a2e,#0f0f1a);border-bottom:2px solid #FFEB43;"></div>
+  
   <div id="chat-bar">
     <input id="chat-input" type="text" placeholder="Say something to the night owls… 🌙" maxlength="300" />
     <button id="chat-send" onclick="sendChat()">Send</button>
@@ -1187,8 +1189,57 @@ centralalbertaafterdarkads@gmail.com')">
       }
     }
 
-    function sendChat() {
-      showToast('💬 Chat coming soon for Night Owl Premium members!');
+    async function sendChat() {
+      const input = document.getElementById('chat-input');
+      const message = input.value.trim();
+      if (!message) return;
+      if (!currentUser) {
+        showToast('🌙 Sign up to post!');
+        return;
+      }
+      try {
+        const csrfRes = await fetch('/api/csrf-token');
+        const { csrfToken } = await csrfRes.json();
+        
+        const res = await fetch('/api/ticker', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          body: JSON.stringify({ message }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          input.value = '';
+          loadTicker(); // Refresh feed
+          showToast('💬 Posted!');
+        } else {
+          showToast('❌ ' + (data.error || 'Failed to post'));
+        }
+      } catch (e) {
+        showToast('❌ Error posting');
+      }
+    }
+
+    async function loadTicker() {
+      try {
+        const res = await fetch('/api/ticker');
+        const data = await res.json();
+        const feed = document.getElementById('ticker-feed');
+        if (feed && data.ticker) {
+          feed.innerHTML = data.ticker.slice(0, 10).map(m => 
+            '<div style="padding:8px 0;border-bottom:1px solid #333;"><strong style="color:#FFEB43;">@' + m.username + '</strong> <span style="color:#888;font-size:0.8em;">' + new Date(m.created_at).toLocaleTimeString() + '</span><div style="color:#eee;margin-top:4px;">' + m.message + '</div></div>'
+          ).join('');
+        }
+      } catch (e) {}
+    }
+
+    // Auto-refresh ticker every 10 seconds
+    if (document.getElementById('ticker-feed')) {
+      loadTicker();
+      setInterval(loadTicker, 10000);
     }
 
     // ── Premium checkout ───────────────────────────────────────────────────
