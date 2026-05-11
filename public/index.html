@@ -764,12 +764,9 @@ prime time 🌙✨</p>
       <a href="/settings.html" class="auth-btn" id="header-settings-btn" style="display:none;">My Profile</a>
       <button class="auth-btn" id="header-logout-btn" onclick="handleLogout()" style="display:none;">Log Out</button>
       <span class="auth-btn" id="payment-btn" onclick="alert('Dashboard: ID Verification & Payment Options')" style="display:none;">🔒 Verify & Subscribe</span>
+      <button class="auth-btn" id="header-download-btn" onclick="if (window.matchMedia('(display-mode: standalone)').matches) { alert('App already installed!'); } else { alert('To install: Tap the menu and select Add to Home Screen'); }" style="display:none;">📱 Download</button>
     </div>
-<div class="sidebar-download" style="padding:1rem;text-align:center;"><button class="auth-btn" style="width:100%;" onclick="if (window.matchMedia('(display-mode: standalone)').matches) { alert('App already installed!'); } else { alert('To install: Tap the menu and select Add to Home Screen'); }">
-      📱 Download
-    </button>
-   
-    <div class="moon-star">🌙</div>
+
   </header>
 
   <div class="app-wrapper">
@@ -856,6 +853,7 @@ centralalbertaafterdarkads@gmail.com')">
       document.getElementById('header-login-btn').style.display = username ? 'none' : '';
       document.getElementById('header-signup-btn').style.display = username ? 'none' : '';
       document.getElementById('header-settings-btn').style.display = username ? '' : 'none';
+      document.getElementById('header-download-btn').style.display = username ? '' : 'none';
       document.getElementById('header-logout-btn').style.display = username ? '' : 'none';
       document.getElementById('payment-btn').style.display = username ? '' : 'none';
     }
