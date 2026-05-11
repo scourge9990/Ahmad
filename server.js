@@ -579,7 +579,7 @@ app.post('/api/login', csrfProtection, [
   const { username, password } = req.body;
   
   db.get(
-    `SELECT id, username, password_hash, is_verified, failed_login_attempts, locked_until FROM users WHERE username = ?`,
+    `SELECT id, username, password_hash, is_verified, failed_login_attempts, locked_until, last_active FROM users WHERE username = ?`,
     [username],
     async (err, user) => {
       if (err) {
@@ -623,7 +623,29 @@ app.post('/api/login', csrfProtection, [
           }
           req.session.userId = user.id;
           req.session.username = user.username;
-          res.json({ success: true, username: user.username });
+          
+          // Check for new likes since last login
+          const lastActive = user.last_active || '1970-01-01';
+          db.all(`SELECT l.id, l.created_at, u.username, u.age, u.location, u.bio
+            FROM likes l 
+            JOIN users u ON l.liker_id = u.id
+            WHERE l.liked_id = ? AND l.created_at > ?
+            ORDER BY l.created_at DESC`, [user.id, lastActive], (err, newLikes) => {
+            // Update last_active
+            db.run(`UPDATE users SET last_active = datetime('now') WHERE id = ?`, [user.id]);
+            
+            const likers = newLikes ? newLikes.map(u => u.username) : [];
+            if (likers.length > 0) {
+              res.json({ 
+                success: true, 
+                username: user.username,
+                newLikes: likers,
+                newLikesMessage: `❤️ You've been liked by ${likers.join(', ')} while you were away!`
+              });
+            } else {
+              res.json({ success: true, username: user.username });
+            }
+          });
         });
       } catch (error) {
         console.error('Bcrypt Error:', error);

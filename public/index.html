@@ -956,7 +956,12 @@ centralalbertaafterdarkads@gmail.com')">
         if (res.ok && data.success) {
           closeModal('login-modal');
           setAuthUI(data.username);
-          showToast('🌙 Welcome back, ' + data.username + '!');
+          // Check for new likes while away
+          if (data.newLikesMessage) {
+            showToast(data.newLikesMessage);
+          } else {
+            showToast('🌙 Welcome back, ' + data.username + '!');
+          }
           loadProfiles();
         } else {
           msg.className = 'modal-msg error';
