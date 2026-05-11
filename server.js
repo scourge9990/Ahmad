@@ -942,6 +942,12 @@ app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
   const likerId = req.session.userId;
   if (likedId === likerId) return res.status(400).json({ error: 'Cannot like yourself' });
   
+
+  // Get liker name for notifications
+  let likerName = "Someone";
+  db.get(`SELECT username FROM users WHERE id = ?`, [likerId], (err, row) => {
+    if (row) likerName = row.username;
+  });
   db.run(
     `INSERT OR IGNORE INTO likes (liker_id, liked_id) VALUES (?, ?)`,
     [likerId, likedId],
@@ -963,8 +969,32 @@ app.post('/api/like/:id', requireAuth, csrfProtection, (req, res) => {
             const user1 = Math.min(likerId, likedId);
             const user2 = Math.max(likerId, likedId);
             db.run(`INSERT OR IGNORE INTO matches (user1_id, user2_id) VALUES (?, ?)`, [user1, user2]);
+            
+            // Send match email notification (async, don't wait)
+            db.get(`SELECT email, username FROM users WHERE id = ?`, [likedId], (err, likedUser) => {
+              if (likedUser && likerName && !/\b(example\.com|test\.com|fake\.com)\$/i.test(likedUser.email)) {
+                sendEmail(
+                  likedUser.email,
+                  '💛 It\'s a Match with ' + likerName + '!',
+                  `<p>🎉 Congratulations! You and <strong>${likerName}</strong> liked each other!</p><p>It's a match! Send them a message.</p>`
+                ).catch(e => console.log('Match email error:', e.message));
+              }
+            });
+            
             return res.json({ success: true, match: true, message: "It's a match!" });
           }
+          
+          // Send like email notification (async, don't wait)
+          db.get(`SELECT email, username FROM users WHERE id = ?`, [likedId], (err, likedUser) => {
+            if (likedUser && likerName && !/\b(example\.com|test\.com|fake\.com)\$/i.test(likedUser.email)) {
+              sendEmail(
+                likedUser.email,
+                '❤️ ' + likerName + ' liked your profile!',
+                `<p>🌙 <strong>${likerName}</strong> liked your profile!</p><p>Log in to see who and like them back!</p>`
+              ).catch(e => console.log('Like email error:', e.message));
+            }
+          });
+          
           res.json({ success: true, match: false, message: 'Liked!' });
         }
       );
