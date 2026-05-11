@@ -825,68 +825,7 @@ centralalbertaafterdarkads@gmail.com')">
     let currentUser = null;
 
     // ── Demo Profiles ──────────────────────────────────────────────────────
-    const demoProfiles = [
-      {
-        id: 101,
-        name: 'Wildcat',
-        age: 29,
-        location: 'Red Deer, AB',
-        distance: '12 km away',
-        bio: 'Night shift nurse who unwinds with country music and bonfires. Looking for someone who doesn\'t mind a 3am text. 🔥🎶',
-        interests: ['🔥', '🎶', '🌙'],
-        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=Wildcat',
-        online: true,
-        inRadius: true,
-      },
-      {
-        id: 102,
-        name: 'NightNurse',
-        age: 34,
-        location: 'Lacombe, AB',
-        distance: '28 km away',
-        bio: 'ER nurse, coffee addict, dog mom. Off at 0700 and ready to grab breakfast. Swipe right if you\'re an early bird or a night owl. 🐾☕',
-        interests: ['🐾', '☕', '❤️'],
-        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=NightNurse',
-        online: true,
-        inRadius: true,
-      },
-      {
-        id: 103,
-        name: 'LongHaulLisa',
-        age: 41,
-        location: 'Ponoka, AB',
-        distance: '45 km away',
-        bio: 'Long-haul trucker. I\'ve seen every sunrise from a highway. Looking for someone real — no games, just good vibes and cold beer. 🚛🍺',
-        interests: ['🚛', '🍺', '🛣️'],
-        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=LongHaulLisa',
-        online: false,
-        inRadius: true,
-      },
-      {
-        id: 104,
-        name: 'RigRoughneck',
-        age: 38,
-        location: 'Innisfail, AB',
-        distance: '33 km away',
-        bio: '2 weeks on, 2 weeks off. When I\'m home I go hard — fishing, quads, and the occasional pub crawl. Let\'s make the off-weeks count. 🎣🏍️',
-        interests: ['🎣', '🏍️', '🍺'],
-        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=RigRoughneck',
-        online: false,
-        inRadius: false,
-      },
-      {
-        id: 105,
-        name: 'SecuritySam',
-        age: 26,
-        location: 'Sylvan Lake, AB',
-        distance: '52 km away',
-        bio: 'Security guard at the casino — I work while the world sleeps. Big into hiking, horror movies, and my two cats. Night owls only. 🐱🎬',
-        interests: ['🐱', '🎬', '🌙'],
-        image: 'https://api.dicebear.com/7.x/thumbs/svg?seed=SecuritySam',
-        online: true,
-        inRadius: true,
-      },
-    ];
+    const demoProfiles = []; // Loaded from API
 
     // ── Modal helpers ──────────────────────────────────────────────────────
     function openModal(id) {
