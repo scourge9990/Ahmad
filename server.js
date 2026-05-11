@@ -791,30 +791,41 @@ app.get('/api/profiles', requireAuth, (req, res) => {
 // Update user profile (including age)
 app.put('/api/me', requireAuth, csrfProtection, (req, res) => {
   const { age, bio, location, shift_schedule, interests, looking_for } = req.body;
+  
+  // Handle empty strings as null
+  const ageVal = age && age !== '' ? parseInt(age) : null;
+  const bioVal = bio && bio.trim() ? sanitizeInput(bio) : null;
+  const locVal = location && location.trim() ? sanitizeInput(location) : null;
+  const shiftVal = shift_schedule && shift_schedule.trim() ? sanitizeInput(shift_schedule) : null;
+  
   db.run(
     `UPDATE users SET 
-       age = CASE WHEN ? IS NOT NULL THEN ? ELSE age END,
+       age = COALESCE(?, age),
        bio = COALESCE(?, bio), 
        location = COALESCE(?, location), 
        shift_schedule = COALESCE(?, shift_schedule) 
      WHERE id = ?`,
-    [age, age ? parseInt(age) : null, bio ? sanitizeInput(bio) : null, location ? sanitizeInput(location) : null, shift_schedule ? sanitizeInput(shift_schedule) : null, req.session.userId],
+    [ageVal, bioVal, locVal, shiftVal, req.session.userId],
     function(err) {
       if (err) {
         console.error('DB Error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
       
-      // Also update profile
-      if (interests !== undefined || looking_for !== undefined) {
-        db.run(
-          `UPDATE profiles SET interests = COALESCE(?, interests), looking_for = COALESCE(?, looking_for) WHERE user_id = ?`,
-          [interests ? sanitizeInput(interests) : null, looking_for ? sanitizeInput(looking_for) : null, req.session.userId],
-          (err) => {
-            if (err) console.error('Profile update error:', err);
-          }
-        );
-      }
+      // Ensure profile row exists, then update interests/looking_for
+      db.run(
+        `INSERT OR IGNORE INTO profiles (user_id) VALUES (?)`,
+        [req.session.userId],
+        () => {
+          db.run(
+            `UPDATE profiles SET interests = COALESCE(?, interests), looking_for = COALESCE(?, looking_for) WHERE user_id = ?`,
+            [interests || null, looking_for || null, req.session.userId],
+            (err) => {
+              if (err) console.error('Profile update error:', err);
+            }
+          );
+        }
+      );
       
       res.json({ success: true });
     }
