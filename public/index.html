@@ -1230,7 +1230,7 @@ centralalbertaafterdarkads@gmail.com')">
         const feed = document.getElementById('ticker-feed');
         if (feed) {
           const now = new Date();
-          const dots = '<div style="text-align:center;padding:10px;color:#666;font-size:0.9em;">● Live 🌙 <span id="live-dot" style="display:inline-block;width:8px;height:8px;background:#4CAF50;border-radius:50%;margin-right:5px;animation:pulse 1.5s infinite;"></span></div>';
+          const dots = '<div style="text-align:center;padding:8px;color:#4CAF50;font-size:0.9em;font-weight:bold;">● Live 🌙 <span id="live-dot" style="display:inline-block;width:8px;height:8px;background:#4CAF50;border-radius:50%;margin-right:5px;animation:pulse 1.5s infinite;"></span></div>';
           
           if (!data.ticker || data.ticker.length === 0) {
             feed.innerHTML = dots + '<div style="text-align:center;padding:20px;color:#555;font-style:italic;">💬 Be the first to say something!</div>';
