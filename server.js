@@ -1104,6 +1104,29 @@ app.get('/api/webhook/stripe', (req, res) => res.send('Stripe webhook endpoint a
   );
 });
 
+// Get new likes/notifications for polling
+app.get('/api/notifications', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const since = req.query.since || '1970-01-01';
+  
+  db.all(
+    `SELECT l.id, l.created_at as time, u.id as liker_id, u.username, u.age, u.photos
+      FROM likes l 
+      JOIN users u ON l.liker_id = u.id
+      WHERE l.liked_id = ? AND l.created_at > ?
+      ORDER BY l.created_at DESC
+      LIMIT 10`,
+    [userId, since],
+    (err, notifications) => {
+      if (err) {
+        console.error('DB Error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ notifications: notifications || [] });
+    }
+  );
+});
+
 // Get user's matches
 app.get('/api/matches', requireAuth, (req, res) => {
   const userId = req.session.userId;

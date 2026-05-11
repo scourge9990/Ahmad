@@ -911,6 +911,7 @@ centralalbertaafterdarkads@gmail.com')">
     // ── Auth state ─────────────────────────────────────────────────────────
     function setAuthUI(username) {
       currentUser = username;
+      if (username) lastNotificationTime = null; // Reset on login
       document.getElementById('header-login-btn').style.display = username ? 'none' : '';
       document.getElementById('header-signup-btn').style.display = username ? 'none' : '';
       document.getElementById('header-settings-btn').style.display = username ? '' : 'none';
@@ -1271,6 +1272,27 @@ centralalbertaafterdarkads@gmail.com')">
     // ── Init ───────────────────────────────────────────────────────────────
 
     checkSession().then(() => loadProfiles());
+    
+    // ── Notification Polling ─────────────────────────────────────────────
+    let lastNotificationTime = null;
+    
+    async function checkNotifications() {
+      if (!currentUser) return; // Not logged in
+      try {
+        const res = await fetch('/api/notifications?since=' + (lastNotificationTime || encodeURIComponent(new Date().toISOString())));
+        const data = await res.json();
+        if (data.notifications && data.notifications.length > 0) {
+          const latest = data.notifications[0];
+          if (!lastNotificationTime || latest.time > lastNotificationTime) {
+            lastNotificationTime = latest.time;
+            showToast('❤️ ' + latest.username + ' liked you!');
+          }
+        }
+      } catch (e) {}
+    }
+    
+    // Poll every 5 seconds when logged in
+    setInterval(checkNotifications, 5000);
   </script>
 </body>
 </html>
