@@ -1265,8 +1265,7 @@ centralalbertaafterdarkads@gmail.com')">
 
     // ── Init ───────────────────────────────────────────────────────────────
 
-    checkSession();
-    loadProfiles();
+    checkSession().then(() => loadProfiles());
   </script>
 </body>
 </html>
