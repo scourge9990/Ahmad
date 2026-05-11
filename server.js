@@ -425,13 +425,16 @@ app.post('/api/register', csrfProtection, [
             }
           );
           
-          // Try sending email
-          const verifyUrl = `${APP_URL}/api/verify-email?token=${verificationToken}`;
-          sendEmail(
-            email,
-            'Verify your Central Alberta After Dark account',
-            `<p>Welcome to Central Alberta After Dark!</p><p>Please verify your email address: <a href="${verifyUrl}">${verifyUrl}</a></p><p>Must verify before logging in.</p>`
-          ).catch(err => console.log('Email error (expected):', err.message));
+          // Only send verification email for real domains (skip test@example.com etc)
+          const isTestEmail = /\b(example\.com|test\.com|foo\.com|fake\.com|null)\$/i.test(email);
+          if (!isTestEmail) {
+            const verifyUrl = `${APP_URL}/api/verify-email?token=${verificationToken}`;
+            sendEmail(
+              email,
+              'Verify your Central Alberta After Dark account',
+              `<p>Welcome to Central Alberta After Dark!</p><p>Please verify your email address: <a href="${verifyUrl}">${verifyUrl}</a></p><p>Must verify before logging in.</p>`
+            ).catch(err => console.log('Email error:', err.message));
+          }
           
           res.status(201).json({ success: true, message: 'Account created!' });
         }
