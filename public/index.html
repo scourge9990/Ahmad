@@ -811,7 +811,7 @@ centralalbertaafterdarkads@gmail.com')">
     </aside>
   </div>
 
-  <div id="ticker-feed" style="max-height:200px;overflow-y:auto;padding:10px;background:linear-gradient(180deg,#1a1a2e,#0f0f1a);border-bottom:2px solid #FFEB43;"></div>
+  <div id="ticker-feed" style="max-height:120px;overflow-y:auto;padding:8px;background:#0a0a15;border-bottom:2px solid #FFEB43;font-size:0.85em;"></div>
   
   <div id="chat-bar">
     <input id="chat-input" type="text" placeholder="Say something to the night owls… 🌙" maxlength="300" />
@@ -1235,7 +1235,7 @@ centralalbertaafterdarkads@gmail.com')">
           if (!data.ticker || data.ticker.length === 0) {
             feed.innerHTML = dots + '<div style="text-align:center;padding:20px;color:#555;font-style:italic;">💬 Be the first to say something!</div>';
           } else {
-            feed.innerHTML = dots + data.ticker.slice(0, 10).map(m => {
+            feed.innerHTML = dots + data.ticker.slice(0, 4).map(m => {
               const time = new Date(m.created_at);
               const ago = Math.floor((now - time) / 60000);
               const timeStr = ago < 1 ? 'just now' : ago + 'm ago';
