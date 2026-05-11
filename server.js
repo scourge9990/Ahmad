@@ -205,6 +205,20 @@ app.post('/api/upload-photo', requireAuth, upload.single('photo'), (req, res) =>
   });
 });
 
+// Admin: Delete test users
+app.delete('/api/admin/users', (req, res) => {
+  const { usernames } = req.body;
+  if (!usernames || !Array.isArray(usernames)) {
+    return res.status(400).json({ error: 'usernames array required' });
+  }
+  const placeholders = usernames.map(() => '?').join(',');
+  db.run('DELETE FROM users WHERE username IN (' + placeholders + ')', usernames, function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ deleted: this.changes });
+  });
+  db.run('DELETE FROM profiles WHERE user_id IN (SELECT id FROM users WHERE username IN (' + placeholders + '))', usernames);
+});
+
 app.use(express.static('public'));
 
 const csrfProtection = csrf({ cookie: { httpOnly: true }, secret: SESSION_SECRET });
