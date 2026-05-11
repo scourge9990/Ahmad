@@ -1235,7 +1235,9 @@ centralalbertaafterdarkads@gmail.com')">
           if (!data.ticker || data.ticker.length === 0) {
             feed.innerHTML = dots + '<div style="text-align:center;padding:20px;color:#555;font-style:italic;">💬 Be the first to say something!</div>';
           } else {
-            feed.innerHTML = dots + data.ticker.slice(0, 4).map(m => {
+            // Reverse: newest at bottom
+          const msgs = data.ticker.slice(0, 4).reverse();
+          feed.innerHTML = dots + msgs.map(m => {
               const time = new Date(m.created_at);
               const ago = Math.floor((now - time) / 60000);
               const timeStr = ago < 1 ? 'just now' : ago + 'm ago';
