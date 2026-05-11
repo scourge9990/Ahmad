@@ -178,7 +178,7 @@ app.delete('/api/photos/:index', requireAuth, (req, res) => {
     if (err || !row || !row.photos) return res.json({ photos: [] });
     let photos = [];
     try { photos = JSON.parse(row.photos); } catch (_) {}
-    if (index >= 0 \&\& index < photos.length) {
+    if (index >= 0 && index < photos.length) {
       photos.splice(index, 1);
       db.run('UPDATE profiles SET photos = ? WHERE user_id = ?', [JSON.stringify(photos), req.session.userId], (e) => {
         res.json({ photos });
