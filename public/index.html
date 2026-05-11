@@ -1228,10 +1228,20 @@ centralalbertaafterdarkads@gmail.com')">
         const res = await fetch('/api/ticker');
         const data = await res.json();
         const feed = document.getElementById('ticker-feed');
-        if (feed && data.ticker) {
-          feed.innerHTML = data.ticker.slice(0, 10).map(m => 
-            '<div style="padding:8px 0;border-bottom:1px solid #333;"><strong style="color:#FFEB43;">@' + m.username + '</strong> <span style="color:#888;font-size:0.8em;">' + new Date(m.created_at).toLocaleTimeString() + '</span><div style="color:#eee;margin-top:4px;">' + m.message + '</div></div>'
-          ).join('');
+        if (feed) {
+          const now = new Date();
+          const dots = '<div style="text-align:center;padding:10px;color:#666;font-size:0.9em;">● Live 🌙 <span id="live-dot" style="display:inline-block;width:8px;height:8px;background:#4CAF50;border-radius:50%;margin-right:5px;animation:pulse 1.5s infinite;"></span></div>';
+          
+          if (!data.ticker || data.ticker.length === 0) {
+            feed.innerHTML = dots + '<div style="text-align:center;padding:20px;color:#555;font-style:italic;">💬 Be the first to say something!</div>';
+          } else {
+            feed.innerHTML = dots + data.ticker.slice(0, 10).map(m => {
+              const time = new Date(m.created_at);
+              const ago = Math.floor((now - time) / 60000);
+              const timeStr = ago < 1 ? 'just now' : ago + 'm ago';
+              return '<div style="padding:10px 0;border-bottom:1px solid #333;animation:fadeIn 0.3s ease;"><strong style="color:#FFEB43;">@' + m.username + '</strong> <span style="color:#666;font-size:0.75em;">' + timeStr + '</span><div style="color:#ddd;margin-top:4px;font-size:0.95em;">' + m.message + '</div></div>';
+            }).join('');
+          }
         }
       } catch (e) {}
     }
