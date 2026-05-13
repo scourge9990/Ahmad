@@ -1259,6 +1259,8 @@ centralalbertaafterdarkads@gmail.com')">
         const data = await res.json();
         if (data.url) {
           window.location.href = data.url;
+        } else {
+          alert('Checkout unavailable. Please contact support.');
         }
       } catch (err) {
         console.error('Checkout error:', err);
