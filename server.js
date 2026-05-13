@@ -98,7 +98,7 @@ app.use(helmet({
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 20,
   message: { error: 'Too many login attempts. Try again in 15 minutes.' },
 });
 
