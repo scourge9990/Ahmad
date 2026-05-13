@@ -865,6 +865,7 @@ centralalbertaafterdarkads@gmail.com')">
         const res = await fetch('/api/me');
         if (res.ok) {
           const data = await res.json();
+          currentUser = { username: data.username, isPremium: data.is_premium };
           setAuthUI(data.username);
         }
       } catch (_) {}
@@ -897,6 +898,7 @@ centralalbertaafterdarkads@gmail.com')">
         const data = await res.json();
         if (res.ok && data.success) {
           closeModal('login-modal');
+          currentUser = { username: data.username, isPremium: data.is_premium };
           setAuthUI(data.username);
           // Check for new likes while away
           if (data.newLikesMessage) {
@@ -1161,6 +1163,11 @@ centralalbertaafterdarkads@gmail.com')">
       if (!message) return;
       if (!currentUser) {
         showToast('🌙 Sign up to post!');
+        return;
+      }
+      if (!currentUser.isPremium) {
+        showToast('🔒 Night Owl Premium required to chat. Upgrade now!');
+        startPremiumCheckout();
         return;
       }
       try {

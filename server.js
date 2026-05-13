@@ -611,7 +611,7 @@ app.post('/api/login', csrfProtection, [
   const { username, password } = req.body;
   
   db.get(
-    `SELECT id, username, password_hash, is_verified, failed_login_attempts, locked_until, last_active FROM users WHERE username = ?`,
+    `SELECT id, username, password_hash, is_verified, is_premium, failed_login_attempts, locked_until, last_active FROM users WHERE username = ?`,
     [username],
     async (err, user) => {
       if (err) {
@@ -671,11 +671,10 @@ app.post('/api/login', csrfProtection, [
               res.json({ 
                 success: true, 
                 username: user.username,
-                newLikes: likers,
-                newLikesMessage: `❤️ You've been liked by ${likers.join(', ')} while you were away!`
+                is_premium: user.is_premium 
               });
             } else {
-              res.json({ success: true, username: user.username });
+              res.json({ success: true, username: user.username, is_premium: user.is_premium });
             }
           });
         });
