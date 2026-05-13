@@ -419,6 +419,10 @@ app.post('/api/register', csrfProtection, [
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
   body('age').optional().isInt({ min: 18, max: 120 }).withMessage('Age must be 18-120')
 ], async (req, res) => {
+  // Honeypot check
+  if (req.body.website) {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') });
@@ -603,6 +607,10 @@ app.post('/api/login', csrfProtection, [
   body('username').isLength({ min: 3 }).withMessage('Invalid username'),
   body('password').exists().withMessage('Password required')
 ], async (req, res) => {
+  // Honeypot check - if website field has any value, it's a bot
+  if (req.body.website) {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') });
